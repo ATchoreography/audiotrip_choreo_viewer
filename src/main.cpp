@@ -7,14 +7,29 @@
 
 // Local includes
 #include "audiotrip/dtos.h"
+#include "raylib_ext/rlights.h"
 #include "raylib_ext/scoped.h"
 #include "raylib_ext/text3d.h"
+
+#if defined(PLATFORM_DESKTOP)
+#define GLSL_VERSION 330
+#else // PLATFORM_RPI, PLATFORM_ANDROID, PLATFORM_WEB
+#define GLSL_VERSION 100
+#endif
 
 /*
  * Note: Y is UP! The song extends parallel to Z, arms point parallel to X
  */
 
-Model barrierModel;
+// Barrier notes:
+// - 20cm above the floor
+// - 225cm wide
+// - XY=0, angle 0 places the barrier facing down, bottom side at 180cm
+// - XY=0, angle 90° places the barrier on the side, center tick is at 125cm
+// - => reference point is in the middle, 55cm below the bottom side
+// - Y position is subtracted, not added
+
+std::unique_ptr<raylib::Model> barrierModel;
 
 static unsigned char GetRandomValueU8(unsigned char min, unsigned char max) {
   return GetRandomValue(min, max);
@@ -25,13 +40,10 @@ static void drawChoreoEventElement(const audiotrip::ChoreoEvent &event, float di
   Vector3 v = event.position.vectorWithDistance(distance);
 
   if (event.type == audiotrip::ChoreoEventTypeBarrier) {
-    rlTranslatef(v.x, 1.55 / 2 + 0.01, v.z);
-    {
-      raylib_ext::scoped::Matrix rotation;
-      rlRotatef(-event.position.z(), 0, 0, 1);
-      rlTranslatef(0, v.y, 0);
-      DrawModel(barrierModel, { 0, 0, 0 }, 0.013, RED);
-    }
+    rlTranslatef(v.x, 1.25, v.z);
+    rlRotatef(-event.position.z(), 0, 0, 1);
+    rlTranslatef(0, 0.55f - v.y, 0);
+    DrawModel(*barrierModel, { 0, 0, 0 }, 0.0145, RED);
     return;
   }
 
@@ -69,34 +81,43 @@ static void drawChoreoEventElement(const audiotrip::ChoreoEvent &event, float di
 }
 
 int main(int argc, const char *argv[]) {
+  float playerHeight = 1.381876;
+
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " [ats file]" << std::endl;
     return 1;
   }
 
+  SetConfigFlags(FLAG_MSAA_4X_HINT);
+  raylib::Window window(1600, 1200, "Audio Trip Choreography Viewer");
+
+  barrierModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
+
+  // Define the camera to look into our 3d world (position, target, up vector)
+  raylib::Camera camera({ 0, playerHeight, 0 }, { 0.0f, 0, -20.0f }, { 0.0f, 1.0f, 0.0f }, 60.0f, CAMERA_PERSPECTIVE);
+  camera.SetMode(CAMERA_FIRST_PERSON);
+  SetTargetFPS(60);
+
+  // Set up lighting
+  //  raylib::Shader shader(TextFormat("resources/shaders/glsl%i/base_lighting.vs", GLSL_VERSION),
+  //                        TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
+  //
+  //  shader.locs[SHADER_LOC_VECTOR_VIEW] = shader.GetLocation("viewPos");
+  //  int ambientLoc = shader.GetLocation("ambient");
+  //  float ambientLocValue[] = { 0.1f, 0.1f, 0.1f, 0.1f };
+  //  SetShaderValue(shader, ambientLoc, ambientLocValue, SHADER_UNIFORM_VEC4);
+  //  barrierModel->materials[0].shader = shader;
+  //
+  //  raylib_ext::rlights::Light light(raylib_ext::rlights::LIGHT_POINT, { 0, 0, 0 }, { 0, 0, 0 }, WHITE, shader);
+
   audiotrip::AudioTripSong ats = audiotrip::AudioTripSong::fromFile(argv[1]);
   audiotrip::Choreography &choreo = ats.choreographies.front(); // TODO: let the user pick
   std::vector<audiotrip::Beat> beats = ats.computeBeats();
 
-  raylib::Window window(1600, 1200, "Audio Trip Choreography Viewer");
-
-  barrierModel = LoadModel("barrier.obj");
-
-  float playerHeight = 1.55;
   float songWidth = playerHeight;
   float songLength = choreo.secondsToMeters(ats.songEndTimeInSeconds);
 
-  // Define the camera to look into our 3d world (position, target, up vector)
-  raylib::Camera camera((Vector3){ 0, playerHeight, 0 },
-                        (Vector3){ 0.0f, 0, -20.0f },
-                        (Vector3){ 0.0f, 1.0f, 0.0f },
-                        60.0f,
-                        CAMERA_PERSPECTIVE);
-
-  camera.SetMode(CAMERA_FIRST_PERSON);
-
-  SetTargetFPS(60);
-
+  // 689.221
   Vector3 beatNumbersSize = raylib_ext::text3d::MeasureText3D(GetFontDefault(), "1", 8.0f, 1.0f, 0.0f);
 
   // Main game loop
@@ -109,9 +130,14 @@ int main(int argc, const char *argv[]) {
     if (plusPressed || minusPressed) {
       Vector3 NewPos = camera.GetPosition();
       NewPos.z += choreo.secondsToMeters(beats.at(1).time) * (minusPressed ? -1.0f : 1.0f);
-      //      std::cout << NewPos.x << " " << NewPos.y << " " << NewPos.z << std::endl;
+      std::cout << NewPos.x << " " << NewPos.y << " " << NewPos.z << std::endl;
       camera.SetPosition(NewPos);
     }
+    //    light.position = camera.position;
+    //    light.Update(shader);
+    //
+    //    float cameraPosValue[] = { camera.position.x, camera.position.y, camera.position.z };
+    //    SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPosValue, SHADER_UNIFORM_VEC3);
 
     {
       raylib_ext::scoped::Drawing drawing;
@@ -184,8 +210,6 @@ int main(int argc, const char *argv[]) {
                DARKGRAY);
     }
   }
-
-  window.Close();
 
   return 0;
 }

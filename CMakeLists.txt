@@ -7,8 +7,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # PkgConfig dependencies
 find_package(PkgConfig REQUIRED)
-pkg_search_module(RAYLIB REQUIRED IMPORTED_TARGET raylib>=4.0.0)
+pkg_search_module(FMT REQUIRED IMPORTED_TARGET fmt>=8.1.0)
 pkg_search_module(JSONCPP REQUIRED IMPORTED_TARGET jsoncpp>=1.9.0)
+pkg_search_module(RAYLIB REQUIRED IMPORTED_TARGET raylib>=4.0.0)
 
 add_executable(
     AudioTrip_LevelViewer
@@ -25,6 +26,7 @@ target_include_directories(
 
 target_link_libraries(
     AudioTrip_LevelViewer PUBLIC
-    PkgConfig::RAYLIB
+    PkgConfig::FMT
     PkgConfig::JSONCPP
+    PkgConfig::RAYLIB
 )
