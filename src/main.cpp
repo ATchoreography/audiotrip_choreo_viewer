@@ -98,151 +98,156 @@ int main(int argc, const char *argv[]) {
 
   SetConfigFlags(FLAG_MSAA_4X_HINT);
   raylib::Window window(1600, 1200, "Audio Trip Choreography Viewer");
-  raylib::Camera camera({ 0, playerHeight, 0 }, { 0.0f, 0, -20.0f }, { 0.0f, 1.0f, 0.0f }, 60.0f, CAMERA_PERSPECTIVE);
-
-
-  barrierModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
-  drumModel = std::make_unique<raylib::Model>("resources/models/at_drum.obj");
-  dirgemModel = std::make_unique<raylib::Model>("resources/models/at_dirgem.obj");
-  gemModel = std::make_unique<raylib::Model>("resources/models/at_gem.obj");
-
-  raylib::Texture texture("resources/texel_checker.png");
-
-  barrierModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = RED;
-  drumModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
-  gemModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
-  dirgemModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
-
-
-
-  // Set up lighting
-  raylib::Shader shader(TextFormat("resources/shaders/glsl%i/base_lighting.vs", GLSL_VERSION),
-                        TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
-
-  shader.locs[SHADER_LOC_VECTOR_VIEW] = shader.GetLocation("viewPos");
-  shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(shader, "matModel");
-
-  int ambientLoc = shader.GetLocation("ambient");
-  float ambientVal[]{ 0.1f, 0.1f, 0.1f, 0.1f };
-  SetShaderValue(shader, ambientLoc, ambientVal, SHADER_UNIFORM_VEC4);
-
-//  float fogDensity = 0.15f;
-//  int fogDensityLoc = GetShaderLocation(shader, "fogDensity");
-//  SetShaderValue(shader, fogDensityLoc, &fogDensity, SHADER_UNIFORM_FLOAT);
-
-  barrierModel->materials[0].shader = shader;
-  drumModel->materials[0].shader = shader;
-  gemModel->materials[0].shader = shader;
-  dirgemModel->materials[0].shader = shader;
-
-
-  raylib_ext::rlights::Light light(raylib_ext::rlights::LIGHT_POINT, { 1, 1, 1 }, { 0, 0, 0 }, WHITE, shader);
-
-  camera.SetMode(CAMERA_FIRST_PERSON);
-  SetTargetFPS(60);
-
-  audiotrip::AudioTripSong ats = audiotrip::AudioTripSong::fromFile(argv[1]);
-  audiotrip::Choreography &choreo = ats.choreographies.front(); // TODO: let the user pick
-  std::vector<audiotrip::Beat> beats = ats.computeBeats();
-
-  float songWidth = playerHeight;
-  float songLength = choreo.secondsToMeters(ats.songEndTimeInSeconds);
-
-  // 689.221
-  Vector3 beatNumbersSize = raylib_ext::text3d::MeasureText3D(GetFontDefault(), "1", 8.0f, 1.0f, 0.0f);
-
-  // Main game loop
-  while (!WindowShouldClose()) // Detect window close button or ESC key
   {
-    camera.Update();
+    raylib::Camera camera({ 0, playerHeight, 0 }, { 0.0f, 0, -20.0f }, { 0.0f, 1.0f, 0.0f }, 60.0f, CAMERA_PERSPECTIVE);
 
-    bool plusPressed = IsKeyPressed(KEY_PAGE_UP);
-    bool minusPressed = IsKeyPressed(KEY_PAGE_DOWN);
-    if (plusPressed || minusPressed) {
-      Vector3 NewPos = camera.GetPosition();
-      NewPos.z += choreo.secondsToMeters(beats.at(1).time) * (minusPressed ? -1.0f : 1.0f);
-      //      std::cout << NewPos.x << " " << NewPos.y << " " << NewPos.z << std::endl;
-      camera.SetPosition(NewPos);
-    }
-    float cameraPosValue[] = { camera.position.x, camera.position.y, camera.position.z };
-    SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPosValue, SHADER_UNIFORM_VEC3);
-
-        light.position = raylib::Vector3{ -2.0, 2.0, camera.position.z };
-//    light.position = camera.position;
-    light.Update(shader);
-
+    barrierModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
+    drumModel = std::make_unique<raylib::Model>("resources/models/at_drum.obj");
+    dirgemModel = std::make_unique<raylib::Model>("resources/models/at_dirgem.obj");
+    gemModel = std::make_unique<raylib::Model>("resources/models/at_gem.obj");
 
     {
-      raylib_ext::scoped::Drawing drawing;
-      ClearBackground(GRAY);
+      raylib::Texture texture("resources/texel_checker.png");
+
+      barrierModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = RED;
+      drumModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+      gemModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+      dirgemModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
 
       {
-        raylib_ext::scoped::Mode3D mode3d(camera);
 
-        DrawSphere({ -2.0, 2.0, camera.position.z }, 0.05, WHITE);
+        // Set up lighting
+        raylib::Shader shader(TextFormat("resources/shaders/glsl%i/base_lighting.vs", GLSL_VERSION),
+                              TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
 
-        DrawPlane({ 0.0f, 0.0f, songLength / 2.0f }, { songWidth, songLength }, BLACK);
+        shader.locs[SHADER_LOC_VECTOR_VIEW] = shader.GetLocation("viewPos");
+        shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(shader, "matModel");
 
-        // Draw beat numbers
-        for (int beatNum = 1; beatNum <= beats.size(); beatNum++) {
-          float beatTime = beats[beatNum - 1].time;
-          float beatDistance = choreo.secondsToMeters(beatTime);
+        int ambientLoc = shader.GetLocation("ambient");
+        float ambientVal[]{ 0.1f, 0.1f, 0.1f, 0.1f };
+        SetShaderValue(shader, ambientLoc, ambientVal, SHADER_UNIFORM_VEC4);
 
+        //  float fogDensity = 0.15f;
+        //  int fogDensityLoc = GetShaderLocation(shader, "fogDensity");
+        //  SetShaderValue(shader, fogDensityLoc, &fogDensity, SHADER_UNIFORM_FLOAT);
+
+        barrierModel->materials[0].shader = shader;
+        drumModel->materials[0].shader = shader;
+        gemModel->materials[0].shader = shader;
+        dirgemModel->materials[0].shader = shader;
+
+        {
+          raylib_ext::rlights::Light light(raylib_ext::rlights::LIGHT_POINT, { 1, 1, 1 }, { 0, 0, 0 }, WHITE, shader);
+
+          camera.SetMode(CAMERA_FIRST_PERSON);
+          SetTargetFPS(60);
+
+          audiotrip::AudioTripSong ats = audiotrip::AudioTripSong::fromFile(argv[1]);
+          audiotrip::Choreography &choreo = ats.choreographies.front(); // TODO: let the user pick
+          std::vector<audiotrip::Beat> beats = ats.computeBeats();
+
+          float songWidth = playerHeight;
+          float songLength = choreo.secondsToMeters(ats.songEndTimeInSeconds);
+
+          // 689.221
+          Vector3 beatNumbersSize = raylib_ext::text3d::MeasureText3D(GetFontDefault(), "1", 8.0f, 1.0f, 0.0f);
+
+          // Main game loop
+          while (!WindowShouldClose()) // Detect window close button or ESC key
           {
-            raylib_ext::scoped::Matrix translateM;
-            rlTranslatef(-songWidth / 2 - 0.1f, 0, beatDistance / 3.0f + beatNumbersSize.z / 2.0f);
-            {
-              raylib_ext::scoped::Matrix rotateM;
-              rlRotatef(180, 0, 1, 0);
+            camera.Update();
 
-              raylib_ext::text3d::DrawText3D(GetFontDefault(),
-                                             std::to_string(beatNum).c_str(),
-                                             { 0, 0, 0 },
-                                             8,
-                                             1,
-                                             0,
-                                             false,
-                                             BLUE);
+            bool plusPressed = IsKeyPressed(KEY_PAGE_UP);
+            bool minusPressed = IsKeyPressed(KEY_PAGE_DOWN);
+            if (plusPressed || minusPressed) {
+              Vector3 NewPos = camera.GetPosition();
+              NewPos.z += choreo.secondsToMeters(beats.at(1).time) * (minusPressed ? -1.0f : 1.0f);
+              //      std::cout << NewPos.x << " " << NewPos.y << " " << NewPos.z << std::endl;
+              camera.SetPosition(NewPos);
+            }
+            float cameraPosValue[] = { camera.position.x, camera.position.y, camera.position.z };
+            SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPosValue, SHADER_UNIFORM_VEC3);
+
+            light.position = raylib::Vector3{ -2.0, 2.0, camera.position.z };
+            //    light.position = camera.position;
+            light.Update(shader);
+
+            {
+              raylib_ext::scoped::Drawing drawing;
+              ClearBackground(GRAY);
+
+              {
+                raylib_ext::scoped::Mode3D mode3d(camera);
+
+                DrawSphere({ -2.0, 2.0, camera.position.z }, 0.05, WHITE);
+
+                DrawPlane({ 0.0f, 0.0f, songLength / 2.0f }, { songWidth, songLength }, BLACK);
+
+                // Draw beat numbers
+                for (int beatNum = 1; beatNum <= beats.size(); beatNum++) {
+                  float beatTime = beats[beatNum - 1].time;
+                  float beatDistance = choreo.secondsToMeters(beatTime);
+
+                  {
+                    raylib_ext::scoped::Matrix translateM;
+                    rlTranslatef(-songWidth / 2 - 0.1f, 0, beatDistance / 3.0f + beatNumbersSize.z / 2.0f);
+                    {
+                      raylib_ext::scoped::Matrix rotateM;
+                      rlRotatef(180, 0, 1, 0);
+
+                      raylib_ext::text3d::DrawText3D(GetFontDefault(),
+                                                     std::to_string(beatNum).c_str(),
+                                                     { 0, 0, 0 },
+                                                     8,
+                                                     1,
+                                                     0,
+                                                     false,
+                                                     BLUE);
+                    }
+                  }
+                }
+                for (const audiotrip::ChoreoEvent &event : choreo.events) {
+                  audiotrip::Beat beat = beats[event.time.beat];
+                  float beatTime = beat.time;
+                  float fraction = static_cast<float>(event.time.numerator) /
+                                   static_cast<float>(event.time.denominator);
+
+                  if (fraction != 1 && fraction != 0) {
+                    float secondsPerBeat = 60.0f / beat.bpm;
+                    beatTime += secondsPerBeat * fraction;
+                  }
+
+                  float beatDistance = choreo.secondsToMeters(beatTime);
+                  drawChoreoEventElement(event, beatDistance);
+                }
+              }
+
+              Vector2 textSize = MeasureTextEx(GetFontDefault(), "Test", 20, 1);
+              int margin = 10;
+              int padding = 10;
+              int lineSpacing = 5;
+              int textHeight = static_cast<int>(textSize.y);
+              int textWidth = std::max({ MeasureText(ats.title.c_str(), 20),
+                                         MeasureText(ats.artist.c_str(), 20),
+                                         MeasureText(ats.authorID.displayName.c_str(), 20) });
+
+              int boxHeight = textHeight * 3 + lineSpacing * 2 + padding * 2;
+              int boxWidth = textWidth + padding * 2;
+
+              DrawRectangle(margin, margin, boxWidth, boxHeight, Fade(WHITE, 0.5f));
+              DrawRectangleLines(margin, margin, boxWidth, boxHeight, BLUE);
+
+              DrawText(ats.title.c_str(), padding + margin, padding + margin, 20, BLACK);
+              DrawText(ats.artist.c_str(), padding + margin, padding + margin + textHeight + lineSpacing, 20, DARKGRAY);
+              DrawText(ats.authorID.displayName.c_str(),
+                       padding + margin,
+                       padding + margin + textHeight * 2 + lineSpacing * 2,
+                       20,
+                       DARKGRAY);
             }
           }
         }
-        for (const audiotrip::ChoreoEvent &event : choreo.events) {
-          audiotrip::Beat beat = beats[event.time.beat];
-          float beatTime = beat.time;
-          float fraction = static_cast<float>(event.time.numerator) / static_cast<float>(event.time.denominator);
-
-          if (fraction != 1 && fraction != 0) {
-            float secondsPerBeat = 60.0f / beat.bpm;
-            beatTime += secondsPerBeat * fraction;
-          }
-
-          float beatDistance = choreo.secondsToMeters(beatTime);
-          drawChoreoEventElement(event, beatDistance);
-        }
       }
-
-      Vector2 textSize = MeasureTextEx(GetFontDefault(), "Test", 20, 1);
-      int margin = 10;
-      int padding = 10;
-      int lineSpacing = 5;
-      int textHeight = static_cast<int>(textSize.y);
-      int textWidth = std::max({ MeasureText(ats.title.c_str(), 20),
-                                 MeasureText(ats.artist.c_str(), 20),
-                                 MeasureText(ats.authorID.displayName.c_str(), 20) });
-
-      int boxHeight = textHeight * 3 + lineSpacing * 2 + padding * 2;
-      int boxWidth = textWidth + padding * 2;
-
-      DrawRectangle(margin, margin, boxWidth, boxHeight, Fade(WHITE, 0.5f));
-      DrawRectangleLines(margin, margin, boxWidth, boxHeight, BLUE);
-
-      DrawText(ats.title.c_str(), padding + margin, padding + margin, 20, BLACK);
-      DrawText(ats.artist.c_str(), padding + margin, padding + margin + textHeight + lineSpacing, 20, DARKGRAY);
-      DrawText(ats.authorID.displayName.c_str(),
-               padding + margin,
-               padding + margin + textHeight * 2 + lineSpacing * 2,
-               20,
-               DARKGRAY);
     }
   }
 
