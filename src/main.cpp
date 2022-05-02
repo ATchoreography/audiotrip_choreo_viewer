@@ -30,9 +30,14 @@
 // - Y position is subtracted, not added
 
 std::unique_ptr<raylib::Model> barrierModel;
-std::unique_ptr<raylib::Model> drumModel;
-std::unique_ptr<raylib::Model> gemModel;
-std::unique_ptr<raylib::Model> dirgemModel;
+
+std::unique_ptr<raylib::Model> drumModelRHS;
+std::unique_ptr<raylib::Model> gemModelRHS;
+std::unique_ptr<raylib::Model> dirgemModelRHS;
+
+std::unique_ptr<raylib::Model> drumModelLHS;
+std::unique_ptr<raylib::Model> gemModelLHS;
+std::unique_ptr<raylib::Model> dirgemModelLHS;
 
 static unsigned char GetRandomValueU8(unsigned char min, unsigned char max) {
   return GetRandomValue(min, max);
@@ -60,8 +65,9 @@ static void drawChoreoEventElement(const audiotrip::ChoreoEvent &event, float di
     case audiotrip::ChoreoEventTypeGemR:
       //      DrawCube({ 0, 0, 0 }, 0.2, 0.2, 0.2, color);
       rlRotatef(event.isRHS() ? -30 : 30, 0, 0, 1);
+      rlRotatef(180, 0, 1, 0);
       rlRotatef(90, 1, 0, 0);
-      DrawModel(*gemModel, { 0, 0, 0 }, 0.01, color);
+      DrawModel(*(event.isRHS() ? gemModelRHS : gemModelLHS), { 0, 0, 0 }, 0.01, color);
       break;
     case audiotrip::ChoreoEventTypeRibbonL:
     case audiotrip::ChoreoEventTypeRibbonR:
@@ -73,13 +79,13 @@ static void drawChoreoEventElement(const audiotrip::ChoreoEvent &event, float di
       rlRotatef(90 - event.subPositions.front().x(), 1, 0, 0);
       rlRotatef(270 - event.subPositions.front().y(), 0, 0, 1);
       //      DrawCylinder({ 0, 0, 0 }, 0.25, 0.25, 0.1, 6, color);
-      DrawModel(*drumModel, { 0, 0, 0 }, 0.01, color);
+      DrawModel(*(event.isRHS() ? drumModelRHS : drumModelLHS), { 0, 0, 0 }, 0.01, color);
       break;
     case audiotrip::ChoreoEventTypeDirGemL:
     case audiotrip::ChoreoEventTypeDirGemR:
       rlRotatef(-event.subPositions.front().x(), 1, 0, 0);
       rlRotatef(event.subPositions.front().y(), 0, 0, 1);
-      DrawModel(*dirgemModel, { 0, 0, 0 }, 0.01, color);
+      DrawModel(*(event.isRHS() ? dirgemModelRHS : dirgemModelLHS), { 0, 0, 0 }, 0.01, color);
       //      DrawCylinder({ 0, 0, 0 }, 0, 0.2, 0.4, 20, color);
       break;
     default:
@@ -102,17 +108,21 @@ int main(int argc, const char *argv[]) {
     raylib::Camera camera({ 0, playerHeight, 0 }, { 0.0f, 0, -20.0f }, { 0.0f, 1.0f, 0.0f }, 60.0f, CAMERA_PERSPECTIVE);
 
     barrierModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
-    drumModel = std::make_unique<raylib::Model>("resources/models/at_drum.obj");
-    dirgemModel = std::make_unique<raylib::Model>("resources/models/at_dirgem.obj");
-    gemModel = std::make_unique<raylib::Model>("resources/models/at_gem.obj");
+    drumModelLHS = std::make_unique<raylib::Model>("resources/models/at_drum.obj");
+    dirgemModelLHS = std::make_unique<raylib::Model>("resources/models/at_dirgem.obj");
+    gemModelLHS = std::make_unique<raylib::Model>("resources/models/at_gem.obj");
+    drumModelRHS = std::make_unique<raylib::Model>("resources/models/at_drum.obj");
+    dirgemModelRHS = std::make_unique<raylib::Model>("resources/models/at_dirgem.obj");
+    gemModelRHS = std::make_unique<raylib::Model>("resources/models/at_gem.obj");
 
     {
-      raylib::Texture texture("resources/texel_checker.png");
-
       barrierModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = RED;
-      drumModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
-      gemModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
-      dirgemModel->materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+      drumModelRHS->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = PURPLE;
+      gemModelRHS->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = PURPLE;
+      dirgemModelRHS->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = PURPLE;
+      drumModelRHS->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = ORANGE;
+      gemModelRHS->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = ORANGE;
+      dirgemModelRHS->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = ORANGE;
 
       {
 
@@ -132,12 +142,19 @@ int main(int argc, const char *argv[]) {
         //  SetShaderValue(shader, fogDensityLoc, &fogDensity, SHADER_UNIFORM_FLOAT);
 
         barrierModel->materials[0].shader = shader;
-        drumModel->materials[0].shader = shader;
-        gemModel->materials[0].shader = shader;
-        dirgemModel->materials[0].shader = shader;
+        drumModelRHS->materials[0].shader = shader;
+        gemModelRHS->materials[0].shader = shader;
+        dirgemModelRHS->materials[0].shader = shader;
+        drumModelLHS->materials[0].shader = shader;
+        gemModelLHS->materials[0].shader = shader;
+        dirgemModelLHS->materials[0].shader = shader;
 
         {
-          raylib_ext::rlights::Light light(raylib_ext::rlights::LIGHT_POINT, { 1, 1, 1 }, { 0, 0, 0 }, WHITE, shader);
+          raylib_ext::rlights::Light light(raylib_ext::rlights::LIGHT_DIRECTIONAL,
+                                           camera.position,
+                                           camera.target,
+                                           WHITE,
+                                           shader);
 
           camera.SetMode(CAMERA_FIRST_PERSON);
           SetTargetFPS(60);
@@ -161,15 +178,17 @@ int main(int argc, const char *argv[]) {
             bool minusPressed = IsKeyPressed(KEY_PAGE_DOWN);
             if (plusPressed || minusPressed) {
               Vector3 NewPos = camera.GetPosition();
+              std::cout << NewPos.x << " " << NewPos.y << " " << NewPos.z << std::endl;
               NewPos.z += choreo.secondsToMeters(beats.at(1).time) * (minusPressed ? -1.0f : 1.0f);
-              //      std::cout << NewPos.x << " " << NewPos.y << " " << NewPos.z << std::endl;
               camera.SetPosition(NewPos);
             }
+
             float cameraPosValue[] = { camera.position.x, camera.position.y, camera.position.z };
             SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPosValue, SHADER_UNIFORM_VEC3);
 
-            light.position = raylib::Vector3{ -2.0, 2.0, camera.position.z };
-            //    light.position = camera.position;
+            //            light.position = raylib::Vector3{ -2.0, 2.0, camera.position.z };
+            light.position = camera.position;
+            light.target = camera.target;
             light.Update(shader);
 
             {
@@ -179,7 +198,7 @@ int main(int argc, const char *argv[]) {
               {
                 raylib_ext::scoped::Mode3D mode3d(camera);
 
-                DrawSphere({ -2.0, 2.0, camera.position.z }, 0.05, WHITE);
+                //                DrawSphere({ -2.0, 2.0, camera.position.z }, 0.05, WHITE);
 
                 DrawPlane({ 0.0f, 0.0f, songLength / 2.0f }, { songWidth, songLength }, BLACK);
 
@@ -253,9 +272,12 @@ int main(int argc, const char *argv[]) {
 
   // Invoke model dtors
   barrierModel = nullptr;
-  drumModel = nullptr;
-  gemModel = nullptr;
-  dirgemModel = nullptr;
+  drumModelRHS = nullptr;
+  gemModelRHS = nullptr;
+  dirgemModelRHS = nullptr;
+  drumModelLHS = nullptr;
+  gemModelLHS = nullptr;
+  dirgemModelLHS = nullptr;
 
   return 0;
 }
