@@ -1,0 +1,32 @@
+name: Emscripten GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Emscripten
+        uses: lovasoa/setup-emscripten@v1
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          emcmake cmake -DCMAKE_BUILD_TYPE=Debug ..
+          make -j$(nproc)
+          mkdir output
+          mv AudioTrip_LevelViewer.html output/index.html
+          mv *.js *.wasm *.data *.html output/
+          
+      - name: GitHub Pages
+        uses: crazy-max/ghaction-github-pages@v2.6.0
+        with:
+          build_dir: build/output
+          
