@@ -25,7 +25,7 @@ jobs:
           make -j$(nproc)
           mkdir output
           mv AudioTrip_LevelViewer.html output/index.html
-          mv *.js *.wasm *.data *.html output/
+          mv *.js *.wasm *.data output/
 
       - name: GitHub Pages
         uses: crazy-max/ghaction-github-pages@v2.6.0
