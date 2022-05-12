@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <string>
 
 // Libraries
 #include "raylib-cpp.hpp"
@@ -111,13 +112,13 @@ public:
                                                          *shader);
   }
 
+  ~Application() { ClearDroppedFiles(); }
+
   void main(std::optional<std::string> atsFile) {
     beatNumbersSize = raylib_ext::text3d::MeasureText3D(GetFontDefault(), "1", 8.0f, 1.0f, 0.0f);
 
     if (atsFile.has_value()) {
-      ats = std::make_unique<audiotrip::AudioTripSong>(std::move(audiotrip::AudioTripSong::fromFile(*atsFile)));
-      choreo = &ats->choreographies.front(); // TODO: let the user pick
-      beats = ats->computeBeats();
+      openAts(*atsFile);
     }
 
 #ifdef PLATFORM_WEB
@@ -131,11 +132,27 @@ public:
   }
 
 private:
+  void openAts(const std::string &path) {
+    ats = std::make_unique<audiotrip::AudioTripSong>(std::move(audiotrip::AudioTripSong::fromFile(path)));
+    choreo = &ats->choreographies.front(); // TODO: let the user pick
+    beats = ats->computeBeats();
+  }
+
   static void emscriptenMainloop(void *obj) {
     static_cast<Application *>(obj)->drawFrame();
   }
 
   void drawFrame() {
+    if (IsFileDropped()) {
+      std::vector<std::string> files = raylib::GetDroppedFiles();
+      for (const std::string &path : files) {
+        if (path.ends_with(".ats")) {
+          openAts(path);
+          break;
+        }
+      }
+    }
+
     camera->Update();
 
     if (choreo != nullptr) {
@@ -156,11 +173,28 @@ private:
     light->Update(*shader);
 
     {
-      //      raylib_ext::scoped::Drawing drawing;
-      BeginDrawing();
-      drawChoreo();
-      EndDrawing();
+      raylib_ext::scoped::Drawing drawing;
+
+      if (ats != nullptr)
+        drawChoreo();
+      else
+        drawSplash();
     }
+  }
+
+  void drawSplash() {
+    ClearBackground(WHITE);
+
+    const char *text = "Drag and drop an ATS file on this window";
+
+    Vector2 textSize = MeasureTextEx(GetFontDefault(), text, 20, 1);
+    int textWidth = static_cast<int>(textSize.x);
+    int textHeight = static_cast<int>(textSize.y);
+
+    int posX = window->GetWidth() / 2 - textWidth / 2;
+    int posY = window->GetHeight() / 2 - textHeight / 2;
+
+    DrawText(text, posX, posY, 20, BLACK);
   }
 
   void drawChoreo() {
@@ -170,8 +204,7 @@ private:
     ClearBackground(GRAY);
 
     {
-      BeginMode3D(*camera);
-      //      raylib_ext::scoped::Mode3D mode3d(*camera);
+      raylib_ext::scoped::Mode3D mode3d(*camera);
 
       DrawPlane({ 0.0f, 0.0f, songLength / 2.0f }, { songWidth, songLength }, BLACK);
 
@@ -211,7 +244,6 @@ private:
         float beatDistance = choreo->secondsToMeters(beatTime);
         drawChoreoEventElement(event, beatDistance);
       }
-      EndMode3D();
     }
 
     Vector2 textSize = MeasureTextEx(GetFontDefault(), "Test", 20, 1);
@@ -291,12 +323,18 @@ private:
 };
 
 int main(int argc, const char *argv[]) {
-  if (argc < 2) {
-    std::cout << "Usage: " << argv[0] << " [ats file]" << std::endl;
-    return 1;
-  } else {
-    Application app;
-    app.main(argv[1]);
+  std::optional<std::string> filename = std::nullopt;
+
+  if (argc > 1) {
+    if (std::string_view(argv[1]) == "-h" || std::string_view(argv[1]) == "--help") {
+      std::cout << "Usage: " << argv[0] << " [ats file]" << std::endl;
+      return 0;
+    } else {
+      filename = argv[1];
+    }
   }
+
+  Application app;
+  app.main(filename);
   return 0;
 }
