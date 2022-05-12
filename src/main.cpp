@@ -292,7 +292,7 @@ private:
 
 int main(int argc, const char *argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " [ats file]" << std::endl;
+    std::cout << "Usage: " << argv[0] << " [ats file]" << std::endl;
     return 1;
   } else {
     Application app;
