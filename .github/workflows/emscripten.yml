@@ -11,6 +11,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v11
@@ -24,7 +26,7 @@ jobs:
           mkdir output
           mv AudioTrip_LevelViewer.html output/index.html
           mv *.js *.wasm *.data *.html output/
-          
+
       - name: GitHub Pages
         uses: crazy-max/ghaction-github-pages@v2.6.0
         with:
