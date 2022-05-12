@@ -85,10 +85,7 @@ public:
     colorLoc(shader.GetLocation(fmt::format("lights[{}].color", lightsCount))) {
 
     lightsCount++;
-    if (lightsCount > MAX_LIGHTS)
-      abort();
-
-    Update(shader);
+    assert(lightsCount <= MAX_LIGHTS);
   }
 
   void Update(raylib::Shader &shader) {
