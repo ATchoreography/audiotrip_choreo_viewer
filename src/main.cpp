@@ -215,7 +215,7 @@ private:
 
         {
           raylib_ext::scoped::Matrix translateM;
-          rlTranslatef(-songWidth / 2 - 0.1f, 0, beatDistance / 3.0f + beatNumbersSize.z / 2.0f);
+          rlTranslatef(-songWidth / 2 - 0.1f, 0, beatDistance + beatNumbersSize.z / 2.0f);
           {
             raylib_ext::scoped::Matrix rotateM;
             rlRotatef(180, 0, 1, 0);
