@@ -2,16 +2,16 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210.00009mm"
-   height="160.03375mm"
-   viewBox="0 0 210.00009 160.03376"
+   width="270.93335mm"
+   height="207.43333mm"
+   viewBox="0 0 270.93335 207.43334"
    version="1.1"
    id="svg5"
    inkscape:version="1.1.2 (0a00cf5339, 2022-02-04, custom)"
    sodipodi:docname="floor_texture.svg"
    inkscape:export-filename="/home/depau/CLionProjects/AudioTrip-LevelViewer/resources/floor_texture.png"
-   inkscape:export-xdpi="123.86"
-   inkscape:export-ydpi="123.86"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -31,10 +31,10 @@
      fit-margin-right="0"
      fit-margin-bottom="0"
      inkscape:zoom="1.0998546"
-     inkscape:cx="306.85874"
-     inkscape:cy="404.14433"
-     inkscape:window-width="1628"
-     inkscape:window-height="1500"
+     inkscape:cx="271.39951"
+     inkscape:cy="262.76201"
+     inkscape:window-width="1332"
+     inkscape:window-height="1333"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -48,16 +48,15 @@
      transform="translate(4.4069661,-103.37136)">
     <path
        id="path592"
-       style="fill:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;fill-opacity:0.64834183"
-       d="M -4.4069661,103.37136 V 208.37115 L 100.59334,131.94636 205.59313,208.37115 V 103.37136 Z" />
+       style="fill:#000000;fill-opacity:0.648342;stroke-width:1.29317;stroke-linecap:round;stroke-linejoin:round"
+       d="M -4.4069661,103.37136 V 239.4705 L 131.06003,140.40984 266.52636,239.4705 V 103.37136 Z" />
     <path
        id="path971"
-       style="fill:#000000;stroke-width:3.77953;stroke-linecap:round;stroke-linejoin:round;fill-opacity:0.64834183"
-       d="M 380.19531,706.69531 -16.65625,995.54688 h 793.70117 z"
-       transform="scale(0.26458333)" />
+       style="fill:#000000;fill-opacity:0.648342;stroke-width:1.29317;stroke-linecap:round;stroke-linejoin:round"
+       d="M 131.06003,211.74336 -4.4069661,310.80469 H 266.52637 Z" />
     <path
-       style="fill:#ffffff;fill-opacity:0.34482563;stroke-width:1;stroke-linecap:round;stroke-linejoin:round"
-       d="M -4.4069661,208.37115 100.59334,131.94636 205.59313,208.37115 v 55.03396 L 100.59334,186.9798 -4.4069661,263.40511 Z"
+       style="fill:#ffffff;fill-opacity:0.344826;stroke-width:1.29317;stroke-linecap:round;stroke-linejoin:round"
+       d="M -4.4069661,239.4705 131.06003,140.40984 266.52636,239.4705 v 71.33419 L 131.06003,211.74336 -4.4069661,310.80469 Z"
        id="path41" />
   </g>
 </svg>
