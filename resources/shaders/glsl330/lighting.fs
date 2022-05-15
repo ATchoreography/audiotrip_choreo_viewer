@@ -1,5 +1,7 @@
 #version 330
 
+
+
 // Input vertex attributes (from vertex shader)
 in vec3 fragPosition;
 in vec2 fragTexCoord;
@@ -19,14 +21,6 @@ struct MaterialProperty {
     sampler2D sampler;
 };
 
-struct Light {
-    int enabled;
-    int type;
-    vec3 position;
-    vec3 target;
-    vec4 color;
-};
-
 // Input lighting values
 uniform vec4 ambient;
 uniform vec3 viewPos;
@@ -38,9 +32,6 @@ void main()
     vec3 lightDot = vec3(0.0);
     vec3 normal = normalize(fragNormal);
     vec3 viewD = normalize(viewPos - fragPosition);
-
-    // I have no idea what I'm doing but I like it better
-    texelColor *= 5;
 
     // NOTE: Implement here your fragment shader code
     finalColor = texelColor*(colDiffuse*vec4(lightDot, 1.0));

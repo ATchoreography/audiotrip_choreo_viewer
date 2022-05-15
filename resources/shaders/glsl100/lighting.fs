@@ -29,12 +29,9 @@ void main()
     vec3 normal = normalize(fragNormal);
     vec3 viewD = normalize(viewPos - fragPosition);
 
-    // I have no idea what I'm doing but I like it better
-    texelColor *= 5;
-
     // NOTE: Implement here your fragment shader code
     vec4 finalColor = texelColor*(colDiffuse*vec4(lightDot, 1.0));
-    finalColor += texelColor*(ambient/10.0);
+    finalColor += texelColor*(ambient/10.0)*colDiffuse;
 
     // Gamma correction
     gl_FragColor = pow(finalColor, vec4(1.0/2.2));
