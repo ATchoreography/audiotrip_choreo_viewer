@@ -159,7 +159,7 @@ public:
     camera->SetMode(CAMERA_FIRST_PERSON);
     mouseCapture(false);
 
-    floorTexture = std::make_unique<raylib::Texture2D>("resources/floor_texture.png");
+    floorTexture = std::make_unique<raylib::Texture2D>(raylib::Image("resources/floor_texture.png").Mipmaps());
     rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_MAG_FILTER, RL_TEXTURE_FILTER_ANISOTROPIC);
     rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_CLAMP);
     rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
