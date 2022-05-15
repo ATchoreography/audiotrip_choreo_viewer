@@ -102,12 +102,13 @@ class SkyBox {
 public:
   raylib::Shader shader{ TextFormat("resources/shaders/glsl%i/skybox.vs", GLSL_VERSION),
                          TextFormat("resources/shaders/glsl%i/skybox.fs", GLSL_VERSION) };
-  raylib::Mesh cube = raylib::Mesh::Cube(100, 100, 100);
-  raylib::Model skybox{ cube };
+  raylib::Model skybox{ raylib::Mesh::Cube(100, 100, 100) };
 
   std::unique_ptr<raylib::TextureCubemap> texture;
 
   SkyBox(const std::string &imagePath) {
+    skybox.materials[0].shader = shader;
+
     int environmentMapVal[] = { MATERIAL_MAP_CUBEMAP };
     int doGammaVal[] = { 0 };
     int vflippedVal[] = { 0 };
@@ -208,7 +209,7 @@ public:
     drumModel->materials[0].shader = *shader;
     dirgemModel->materials[0].shader = *shader;
 
-    //    skybox = std::make_unique<SkyBox>("resources/eso.png");
+    skybox = std::make_unique<SkyBox>("resources/at-cubemap.png");
   }
 
   ~Application() { ClearDroppedFiles(); }
@@ -316,7 +317,7 @@ private:
     {
       raylib_ext::scoped::Mode3D mode3d(*camera);
 
-      //      skybox->Draw();
+      skybox->Draw();
 
       DrawChoreoFloor(*floorTexture, *camera);
 
