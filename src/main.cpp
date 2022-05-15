@@ -33,6 +33,7 @@ namespace rlgl {
 
 #define INITIAL_DISTANCE (-2.5f)
 #define PLAYER_HEIGHT (1.381876)
+#define MAX_RENDER_DISTANCE (300.0f)
 
 /*
  * Note: Y is UP! The song extends parallel to Z, arms point parallel to X
@@ -60,7 +61,7 @@ static void DrawChoreoFloor(raylib::Texture2D &texture, const raylib::Camera &ca
 
   rlgl::rlSetTexture(texture.id);
 
-  constexpr float length = 300.0f;
+  constexpr float length = MAX_RENDER_DISTANCE * 2;
   constexpr int divider = 3;
   constexpr float textureLength = length / divider;
 
@@ -310,9 +311,6 @@ private:
   }
 
   void drawChoreo() {
-    float songWidth = PLAYER_HEIGHT;
-    float songLength = choreo->secondsToMeters(ats->songEndTimeInSeconds);
-
     ClearBackground(GRAY);
 
     {
@@ -322,14 +320,20 @@ private:
 
       DrawChoreoFloor(*floorTexture, *camera);
 
+      float minDistance = camera->position.z - MAX_RENDER_DISTANCE;
+      float maxDistance = camera->position.z + MAX_RENDER_DISTANCE;
+
       // Draw beat numbers
       for (int beatNum = 1; beatNum <= beats.size(); beatNum++) {
         float beatTime = beats[beatNum - 1].time;
         float beatDistance = choreo->secondsToMeters(beatTime);
 
+        if (beatDistance > maxDistance || beatDistance < minDistance)
+          continue;
+
         {
           raylib_ext::scoped::Matrix translateM;
-          rlgl::rlTranslatef(-songWidth / 2 - 0.1f, 0, beatDistance + beatNumbersSize.z / 2.0f);
+          rlgl::rlTranslatef(-PLAYER_HEIGHT / 2 - 0.1f, 0, beatDistance + beatNumbersSize.z / 2.0f);
           {
             raylib_ext::scoped::Matrix rotateM;
             rlgl::rlRotatef(180, 0, 1, 0);
@@ -356,6 +360,10 @@ private:
         }
 
         float beatDistance = choreo->secondsToMeters(beatTime);
+
+        if (beatDistance > maxDistance || beatDistance < minDistance)
+          continue;
+
         drawChoreoEventElement(event, beatDistance);
       }
     }
