@@ -124,8 +124,9 @@ private:
 
   std::unique_ptr<raylib::Model> barrierModel;
 
-  std::unique_ptr<raylib::Model> drumModel;
   std::unique_ptr<raylib::Model> gemModel;
+  std::unique_ptr<raylib::Model> gemTrailModel;
+  std::unique_ptr<raylib::Model> drumModel;
   std::unique_ptr<raylib::Model> dirgemModel;
 
   std::unique_ptr<SkyBox> skybox;
@@ -159,13 +160,10 @@ public:
     rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
     barrierModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
+    gemModel = std::make_unique<raylib::Model>("resources/models/gem.obj");
+    gemTrailModel = std::make_unique<raylib::Model>("resources/models/gem_trail.obj");
     drumModel = std::make_unique<raylib::Model>("resources/models/drum.obj");
     dirgemModel = std::make_unique<raylib::Model>("resources/models/dirgem.obj");
-    gemModel = std::make_unique<raylib::Model>("resources/models/gem.obj");
-
-    //    drumModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
-    //    dirgemModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
-    //    gemModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
 
     shader = std::make_unique<raylib::Shader>(TextFormat("resources/shaders/glsl%i/base_lighting.vs", GLSL_VERSION),
                                               TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
@@ -183,8 +181,9 @@ public:
     //  SetShaderValue(shader, fogDensityLoc, &fogDensity, SHADER_UNIFORM_FLOAT);
 
     barrierModel->materials[0].shader = *shader;
-    drumModel->materials[0].shader = *shader;
     gemModel->materials[0].shader = *shader;
+    gemTrailModel->materials[0].shader = *shader;
+    drumModel->materials[0].shader = *shader;
     dirgemModel->materials[0].shader = *shader;
 
     //    skybox = std::make_unique<SkyBox>("resources/eso.png");
@@ -363,7 +362,7 @@ private:
              20,
              DARKGRAY);
 
-    DrawFPS(padding, window->GetHeight() - MeasureTextEx(GetFontDefault(), "FPS", 20, 1).y - padding);
+//    DrawFPS(padding, window->GetHeight() - MeasureTextEx(GetFontDefault(), "FPS", 20, 1).y - padding);
   }
 
   void drawChoreoEventElement(const audiotrip::ChoreoEvent &event, float distance) {
@@ -390,6 +389,7 @@ private:
         rlgl::rlRotatef(event.isRHS() ? -30 : 30, 0, 0, 1);
         rlgl::rlRotatef(180, 0, 1, 0);
         DrawModel(*gemModel, { 0, 0, 0 }, 1, color);
+        DrawModel(*gemTrailModel, { 0, 0, 0 }, 1, color);
         break;
       case audiotrip::ChoreoEventTypeRibbonL:
       case audiotrip::ChoreoEventTypeRibbonR:
