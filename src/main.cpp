@@ -20,8 +20,13 @@ namespace rlgl {
 #include <emscripten/emscripten.h>
 #endif
 
-#if defined(PLATFORM_DESKTOP1)
+// The idea was to use the high-definition models on desktop but in practice the difference is barely noticeable, so
+// I'll use them everywhere.
+#define MODELS_SUFFIX "_lowlod"
+
+#if defined(PLATFORM_DESKTOP)
 #define GLSL_VERSION 330
+//#define MODELS_SUFFIX ""
 #else // PLATFORM_RPI, PLATFORM_ANDROID, PLATFORM_WEB
 #define GLSL_VERSION 100
 #endif
@@ -160,10 +165,10 @@ public:
     rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
     barrierModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
-    gemModel = std::make_unique<raylib::Model>("resources/models/gem.obj");
     gemTrailModel = std::make_unique<raylib::Model>("resources/models/gem_trail.obj");
-    drumModel = std::make_unique<raylib::Model>("resources/models/drum.obj");
-    dirgemModel = std::make_unique<raylib::Model>("resources/models/dirgem.obj");
+    gemModel = std::make_unique<raylib::Model>("resources/models/gem" MODELS_SUFFIX ".obj");
+    drumModel = std::make_unique<raylib::Model>("resources/models/drum" MODELS_SUFFIX ".obj");
+    dirgemModel = std::make_unique<raylib::Model>("resources/models/dirgem" MODELS_SUFFIX ".obj");
 
     shader = std::make_unique<raylib::Shader>(TextFormat("resources/shaders/glsl%i/base_lighting.vs", GLSL_VERSION),
                                               TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
@@ -362,7 +367,7 @@ private:
              20,
              DARKGRAY);
 
-//    DrawFPS(padding, window->GetHeight() - MeasureTextEx(GetFontDefault(), "FPS", 20, 1).y - padding);
+    //    DrawFPS(padding, window->GetHeight() - MeasureTextEx(GetFontDefault(), "FPS", 20, 1).y - padding);
   }
 
   void drawChoreoEventElement(const audiotrip::ChoreoEvent &event, float distance) {
@@ -370,7 +375,6 @@ private:
     Vector3 v = event.position.vectorWithDistance(distance);
 
     if (event.type == audiotrip::ChoreoEventTypeBarrier) {
-//      rlgl::rlTranslatef(v.x, 0, 0);
       rlgl::rlTranslatef(0, 1.20, v.z);
       rlgl::rlRotatef(-event.position.z(), 0, 0, 1);
       rlgl::rlTranslatef(0, 0.45f - v.y, 0);
