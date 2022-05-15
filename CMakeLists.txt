@@ -12,7 +12,7 @@ add_executable(
     src/raylib_ext/text3d.cpp)
 
 if(EMSCRIPTEN)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 --preload-file ${CMAKE_SOURCE_DIR}/resources@resources/")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 --preload-file ${CMAKE_SOURCE_DIR}/resources@resources/ --shell-file ${CMAKE_SOURCE_DIR}/emscripten.html")
     set(PLATFORM Web CACHE BOOL "" FORCE) # for raylib
 else()
     target_compile_options(${PROJECT_NAME} PUBLIC -DPLATFORM_DESKTOP)
