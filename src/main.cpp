@@ -31,7 +31,8 @@ namespace rlgl {
 #define GLSL_VERSION 100
 #endif
 
-#define INITIAL_DISTANCE -2.5f
+#define INITIAL_DISTANCE (-2.5f)
+#define PLAYER_HEIGHT (1.381876)
 
 /*
  * Note: Y is UP! The song extends parallel to Z, arms point parallel to X
@@ -45,7 +46,13 @@ namespace rlgl {
 // - => reference point is in the middle, 55cm below the bottom side
 // - Y position is subtracted, not added
 
-static void DrawChoreoFloor(raylib::Texture2D &texture, raylib::Vector3 centerPos, raylib::Vector2 size) {
+/**
+ * Draws the choreography floor around the camera. The floor is actually centered around the camera and it follows it.
+ * It is made to appear static and infinite with texture trickery.
+ * @param texture
+ * @param camera
+ */
+static void DrawChoreoFloor(raylib::Texture2D &texture, const raylib::Camera &camera) {
   rlgl::rlCheckRenderBatchLimit(4);
 
   // NOTE: Plane is always created on XZ ground
@@ -53,15 +60,26 @@ static void DrawChoreoFloor(raylib::Texture2D &texture, raylib::Vector3 centerPo
 
   rlgl::rlSetTexture(texture.id);
 
-  rlgl::rlTranslatef(centerPos.x, centerPos.y, centerPos.z);
-  rlgl::rlScalef(size.x, 1.0f, size.y);
+  constexpr float length = 300.0f;
+  constexpr int divider = 3;
+  constexpr float textureLength = length / divider;
+
+  static_assert(length - static_cast<int>(length) == 0.0f);
+  static_assert(textureLength - static_cast<int>(textureLength) == 0.0f);
+
+  // Block the floor to a position that matches the texture start
+  int pos = static_cast<int>(camera.position.z);
+  pos -= pos % divider;
+
+  rlgl::rlTranslatef(0, 0, static_cast<float>(pos));
+  rlgl::rlScalef(PLAYER_HEIGHT, 1.0f, length);
 
   // clang-format off
   rlgl::rlBegin(RL_QUADS);
 
     rlgl::rlNormal3f(0.0f, 1.0f, 0.0f);
 
-    rlgl::rlTexCoord2f(0, size.y/3);
+    rlgl::rlTexCoord2f(0, textureLength);
     rlgl::rlVertex3f(-0.5f, 0.0f, -0.5f);
 
     rlgl::rlTexCoord2f(0, 0);
@@ -70,7 +88,7 @@ static void DrawChoreoFloor(raylib::Texture2D &texture, raylib::Vector3 centerPo
     rlgl::rlTexCoord2f(1,  0);
     rlgl::rlVertex3f(0.5f, 0.0f, 0.5f);
 
-    rlgl::rlTexCoord2f(1, size.y/3);
+    rlgl::rlTexCoord2f(1, textureLength);
     rlgl::rlVertex3f(0.5f, 0.0f, -0.5f);
 
   rlgl::rlEnd();
@@ -119,8 +137,6 @@ public:
 
 class Application {
 private:
-  float playerHeight = 1.381876;
-
   std::unique_ptr<raylib::Window> window;
   std::unique_ptr<raylib::Camera> camera;
   std::unique_ptr<raylib::Shader> shader;
@@ -151,7 +167,7 @@ public:
     (void) window; // Silence unused variable
 
     // NOLINTNEXTLINE(modernize-make-unique)
-    camera.reset(new raylib::Camera({ 0.0f, playerHeight, INITIAL_DISTANCE },
+    camera.reset(new raylib::Camera({ 0.0f, PLAYER_HEIGHT, INITIAL_DISTANCE },
                                     { 0.0f, 0, -20 },
                                     { 0.0f, 1.0f, 0.0f },
                                     60.0f,
@@ -294,7 +310,7 @@ private:
   }
 
   void drawChoreo() {
-    float songWidth = playerHeight;
+    float songWidth = PLAYER_HEIGHT;
     float songLength = choreo->secondsToMeters(ats->songEndTimeInSeconds);
 
     ClearBackground(GRAY);
@@ -304,7 +320,7 @@ private:
 
       //      skybox->Draw();
 
-      DrawChoreoFloor(*floorTexture, { 0.0f, 0.0f, songLength / 2.0f }, { songWidth, songLength });
+      DrawChoreoFloor(*floorTexture, *camera);
 
       // Draw beat numbers
       for (int beatNum = 1; beatNum <= beats.size(); beatNum++) {
