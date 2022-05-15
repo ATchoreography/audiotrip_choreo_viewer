@@ -20,7 +20,7 @@ namespace rlgl {
 #include <emscripten/emscripten.h>
 #endif
 
-#if defined(PLATFORM_DESKTOP)
+#if defined(PLATFORM_DESKTOP1)
 #define GLSL_VERSION 330
 #else // PLATFORM_RPI, PLATFORM_ANDROID, PLATFORM_WEB
 #define GLSL_VERSION 100
@@ -154,6 +154,7 @@ public:
     mouseCapture(false);
 
     floorTexture = std::make_unique<raylib::Texture2D>("resources/floor_texture.png");
+    rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_MAG_FILTER, RL_TEXTURE_FILTER_ANISOTROPIC);
     rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_CLAMP);
     rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
@@ -225,6 +226,7 @@ private:
     beats = ats->computeBeats();
     camera->position.z = INITIAL_DISTANCE; // Go back to the start
     mouseCapture(true);
+    std::cout << "Opened ATS file: " << path << std::endl;
   }
 
   static void emscriptenMainloop(void *obj) {
@@ -360,6 +362,8 @@ private:
              padding + margin + textHeight * 2 + lineSpacing * 2,
              20,
              DARKGRAY);
+
+    DrawFPS(padding, window->GetHeight() - MeasureTextEx(GetFontDefault(), "FPS", 20, 1).y - padding);
   }
 
   void drawChoreoEventElement(const audiotrip::ChoreoEvent &event, float distance) {
