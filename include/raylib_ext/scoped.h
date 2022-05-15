@@ -6,7 +6,7 @@
 
 #include "raylib-cpp.hpp"
 
-namespace {
+namespace rlgl {
 extern "C" {
 #include "rlgl.h"
 }
@@ -30,8 +30,8 @@ public:
 
 class Matrix {
 public:
-  Matrix() { rlPushMatrix(); }
+  Matrix() { rlgl::rlPushMatrix(); }
 
-  ~Matrix() { rlPopMatrix(); }
+  ~Matrix() { rlgl::rlPopMatrix(); }
 };
 } // namespace raylib_ext::scoped

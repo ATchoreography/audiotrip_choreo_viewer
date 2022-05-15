@@ -9,9 +9,12 @@
 
 // Local includes
 #include "audiotrip/dtos.h"
-#include "raylib_ext/rlights.h"
 #include "raylib_ext/scoped.h"
 #include "raylib_ext/text3d.h"
+
+namespace rlgl {
+#include "rlgl.h"
+}
 
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
@@ -31,11 +34,83 @@
 
 // Barrier notes:
 // - 20cm above the floor
-// - 225cm wide
+// - 200cm wide
 // - XY=0, angle 0 places the barrier facing down, bottom side at 180cm
 // - XY=0, angle 90° places the barrier on the side, center tick is at 125cm
 // - => reference point is in the middle, 55cm below the bottom side
 // - Y position is subtracted, not added
+
+static void DrawChoreoFloor(raylib::Texture2D &texture, raylib::Vector3 centerPos, raylib::Vector2 size) {
+  rlgl::rlCheckRenderBatchLimit(4);
+
+  // NOTE: Plane is always created on XZ ground
+  raylib_ext::scoped::Matrix matrix;
+
+  rlgl::rlSetTexture(texture.id);
+
+  rlgl::rlTranslatef(centerPos.x, centerPos.y, centerPos.z);
+  rlgl::rlScalef(size.x, 1.0f, size.y);
+
+  // clang-format off
+  rlgl::rlBegin(RL_QUADS);
+
+    rlgl::rlNormal3f(0.0f, 1.0f, 0.0f);
+
+    rlgl::rlTexCoord2f(0, size.y/3);
+    rlgl::rlVertex3f(-0.5f, 0.0f, -0.5f);
+
+    rlgl::rlTexCoord2f(0, 0);
+    rlgl::rlVertex3f(-0.5f, 0.0f, 0.5f);
+
+    rlgl::rlTexCoord2f(1,  0);
+    rlgl::rlVertex3f(0.5f, 0.0f, 0.5f);
+
+    rlgl::rlTexCoord2f(1, size.y/3);
+    rlgl::rlVertex3f(0.5f, 0.0f, -0.5f);
+
+  rlgl::rlEnd();
+  // clang-format on
+
+  rlgl::rlSetTexture(0);
+}
+
+class SkyBox {
+public:
+  raylib::Shader shader{ TextFormat("resources/shaders/glsl%i/skybox.vs", GLSL_VERSION),
+                         TextFormat("resources/shaders/glsl%i/skybox.fs", GLSL_VERSION) };
+  raylib::Mesh cube = raylib::Mesh::Cube(100, 100, 100);
+  raylib::Model skybox{ cube };
+
+  std::unique_ptr<raylib::TextureCubemap> texture;
+
+  SkyBox(const std::string &imagePath) {
+    int environmentMapVal[] = { MATERIAL_MAP_CUBEMAP };
+    int doGammaVal[] = { 0 };
+    int vflippedVal[] = { 0 };
+    shader.SetValue(shader.GetLocation("environmentMap"), environmentMapVal, SHADER_UNIFORM_INT);
+    shader.SetValue(shader.GetLocation("doGamma"), doGammaVal, SHADER_UNIFORM_INT);
+    shader.SetValue(shader.GetLocation("vflipped"), vflippedVal, SHADER_UNIFORM_INT);
+
+    LoadTexture(imagePath);
+  }
+
+  void LoadTexture(const std::string &imagePath) {
+    raylib::Image image(imagePath);
+    texture = std::make_unique<raylib::TextureCubemap>(image, CUBEMAP_LAYOUT_AUTO_DETECT);
+    skybox.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture = *texture;
+  }
+
+  void Draw() {
+    // We are inside the cube, we need to disable backface culling!
+    rlgl::rlDisableBackfaceCulling();
+    rlgl::rlDisableDepthMask();
+
+    skybox.Draw((Vector3){ 0, 0, 0 }, 1.0f, WHITE);
+
+    rlgl::rlEnableBackfaceCulling();
+    rlgl::rlEnableDepthMask();
+  }
+};
 
 class Application {
 private:
@@ -45,11 +120,15 @@ private:
   std::unique_ptr<raylib::Camera> camera;
   std::unique_ptr<raylib::Shader> shader;
 
+  std::unique_ptr<raylib::Texture2D> floorTexture;
+
   std::unique_ptr<raylib::Model> barrierModel;
 
   std::unique_ptr<raylib::Model> drumModel;
   std::unique_ptr<raylib::Model> gemModel;
   std::unique_ptr<raylib::Model> dirgemModel;
+
+  std::unique_ptr<SkyBox> skybox;
 
   Vector3 beatNumbersSize = { -1, -1, -1 };
 
@@ -67,16 +146,25 @@ public:
 
     // NOLINTNEXTLINE(modernize-make-unique)
     camera.reset(new raylib::Camera({ 0.0f, playerHeight, INITIAL_DISTANCE },
-                                    { 0.0f, 0, -20.0f },
+                                    { 0.0f, 0, -20 },
                                     { 0.0f, 1.0f, 0.0f },
                                     60.0f,
                                     CAMERA_PERSPECTIVE));
     camera->SetMode(CAMERA_FIRST_PERSON);
+    mouseCapture(false);
+
+    floorTexture = std::make_unique<raylib::Texture2D>("resources/floor_texture.png");
+    rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_CLAMP);
+    rlgl::rlTextureParameters(floorTexture->id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
     barrierModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
     drumModel = std::make_unique<raylib::Model>("resources/models/drum.obj");
     dirgemModel = std::make_unique<raylib::Model>("resources/models/dirgem.obj");
     gemModel = std::make_unique<raylib::Model>("resources/models/gem.obj");
+
+    //    drumModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
+    //    dirgemModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
+    //    gemModel = std::make_unique<raylib::Model>("resources/models/barrier.obj");
 
     shader = std::make_unique<raylib::Shader>(TextFormat("resources/shaders/glsl%i/base_lighting.vs", GLSL_VERSION),
                                               TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
@@ -97,6 +185,8 @@ public:
     drumModel->materials[0].shader = *shader;
     gemModel->materials[0].shader = *shader;
     dirgemModel->materials[0].shader = *shader;
+
+    //    skybox = std::make_unique<SkyBox>("resources/eso.png");
   }
 
   ~Application() { ClearDroppedFiles(); }
@@ -206,7 +296,9 @@ private:
     {
       raylib_ext::scoped::Mode3D mode3d(*camera);
 
-      DrawPlane({ 0.0f, 0.0f, songLength / 2.0f }, { songWidth, songLength }, BLACK);
+      //      skybox->Draw();
+
+      DrawChoreoFloor(*floorTexture, { 0.0f, 0.0f, songLength / 2.0f }, { songWidth, songLength });
 
       // Draw beat numbers
       for (int beatNum = 1; beatNum <= beats.size(); beatNum++) {
@@ -215,10 +307,10 @@ private:
 
         {
           raylib_ext::scoped::Matrix translateM;
-          rlTranslatef(-songWidth / 2 - 0.1f, 0, beatDistance + beatNumbersSize.z / 2.0f);
+          rlgl::rlTranslatef(-songWidth / 2 - 0.1f, 0, beatDistance + beatNumbersSize.z / 2.0f);
           {
             raylib_ext::scoped::Matrix rotateM;
-            rlRotatef(180, 0, 1, 0);
+            rlgl::rlRotatef(180, 0, 1, 0);
 
             raylib_ext::text3d::DrawText3D(GetFontDefault(),
                                            std::to_string(beatNum).c_str(),
@@ -275,16 +367,15 @@ private:
     Vector3 v = event.position.vectorWithDistance(distance);
 
     if (event.type == audiotrip::ChoreoEventTypeBarrier) {
-      rlTranslatef(v.x, 1.25, v.z);
-      rlRotatef(-event.position.z(), 0, 0, 1);
-      rlTranslatef(0, 0.55f - v.y, 0);
-      rlTranslatef(0, -0.52, 0);
-      rlRotatef(-90, 0, 0, 1);
-      DrawModel(*barrierModel, { 0, 0, 0 }, 0.0145, RED);
+//      rlgl::rlTranslatef(v.x, 0, 0);
+      rlgl::rlTranslatef(0, 1.20, v.z);
+      rlgl::rlRotatef(-event.position.z(), 0, 0, 1);
+      rlgl::rlTranslatef(0, 0.45f - v.y, 0);
+      DrawModel(*barrierModel, { 0, 0, 0 }, 1, RED);
       return;
     }
 
-    rlTranslatef(v.x, v.y, v.z);
+    rlgl::rlTranslatef(v.x, v.y, v.z);
     {
       raylib_ext::scoped::Matrix rotation;
       Color color = event.isRHS() ? ORANGE : PURPLE;
@@ -292,8 +383,8 @@ private:
       switch (event.type) {
       case audiotrip::ChoreoEventTypeGemL:
       case audiotrip::ChoreoEventTypeGemR:
-        rlRotatef(event.isRHS() ? -30 : 30, 0, 0, 1);
-        rlRotatef(180, 0, 1, 0);
+        rlgl::rlRotatef(event.isRHS() ? -30 : 30, 0, 0, 1);
+        rlgl::rlRotatef(180, 0, 1, 0);
         DrawModel(*gemModel, { 0, 0, 0 }, 1, color);
         break;
       case audiotrip::ChoreoEventTypeRibbonL:
@@ -302,15 +393,17 @@ private:
       case audiotrip::ChoreoEventTypeDrumL:
       case audiotrip::ChoreoEventTypeDrumR:
         // Somebody smarter than me please fix the angles, thanks!
-        rlRotatef(-event.subPositions.front().y(), 0, 1, 0);
-        rlRotatef(event.subPositions.front().x(), 1, 0, 0);
-        rlRotatef(180, 0, 1, 0);
+        rlgl::rlRotatef(-event.subPositions.front().y(), 0, 1, 0);
+        rlgl::rlRotatef(event.subPositions.front().x(), 1, 0, 0);
+        rlgl::rlRotatef(180, 0, 1, 0);
         DrawModel(*drumModel, { 0, 0, 0 }, 1, color);
         break;
       case audiotrip::ChoreoEventTypeDirGemL:
       case audiotrip::ChoreoEventTypeDirGemR:
-        rlRotatef(-event.subPositions.front().x(), 1, 0, 0);
-        rlRotatef(event.subPositions.front().y(), 0, 0, 1);
+        rlgl::rlRotatef(-event.subPositions.front().y(), 0, 1, 0);
+        rlgl::rlRotatef(event.subPositions.front().x(), 1, 0, 0);
+        rlgl::rlRotatef(180, 0, 1, 0);
+        rlgl::rlRotatef(event.isRHS() ? 30 : -30, 0, 0, 1);
         DrawModel(*dirgemModel, { 0, 0, 0 }, 1, color);
         break;
       default:
