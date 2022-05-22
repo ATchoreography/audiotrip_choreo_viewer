@@ -1,0 +1,16 @@
+# Simple fake model used to trick raylib into loading a new copy of the materials.mtl data.
+# It is otherwise a triangle.
+mtllib materials.mtl
+o Triangle
+v 0.0 0.0 0.0
+v 0.0 1.0 0.0
+v 1.0 1.0 0.0
+vt 0.0 0.0
+vt 0.0 1.0
+vt 1.0 1.0
+vn 0.0 0.0 1.0
+vn 0.0 0.0 1.0
+vn 0.0 0.0 1.0
+usemtl Color
+s 1
+f 1/1/1 2/2/2 3/3/3

@@ -3,13 +3,18 @@ project(AudioTrip_LevelViewer)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(OpenGL_GL_PREFERENCE GLVND)
+
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g -O0")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g -O0")
 
 add_executable(
     AudioTrip_LevelViewer
     src/main.cpp
     src/audiotrip/dtos.cpp
     src/audiotrip/utils.cpp
-    src/raylib_ext/text3d.cpp)
+    src/raylib_ext/text3d.cpp
+    src/splines/spline3d.cpp)
 
 if(EMSCRIPTEN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 --preload-file ${CMAKE_SOURCE_DIR}/resources@resources/ --shell-file ${CMAKE_SOURCE_DIR}/emscripten.html")
@@ -29,20 +34,13 @@ set(FETCHCONTENT_QUIET NO)
 
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-find_package(raylib 4.0.0 QUIET) # QUIET or REQUIRED
-if(NOT raylib_FOUND) # If there's none, fetch and build raylib
-    include(FetchContent)
-    FetchContent_Declare(
-        raylib
-        URL https://github.com/raysan5/raylib/archive/refs/tags/4.0.0.tar.gz
-    )
-    FetchContent_GetProperties(raylib)
-    if(NOT raylib_POPULATED) # Have we downloaded raylib yet?
-        set(FETCHCONTENT_QUIET NO)
-        FetchContent_Populate(raylib)
-        add_subdirectory(${raylib_SOURCE_DIR} ${raylib_BINARY_DIR})
-    endif()
-endif()
+include(FetchContent)
+
+# Use specific raylib commit since some functionality is broken in 4.0.0
+FetchContent_Declare(
+    raylib
+    URL https://github.com/raysan5/raylib/archive/ef5be632fe777e8303cb2fba6be95e0e4aa0fc85.tar.gz
+)
 
 if(EMSCRIPTEN)
     set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
@@ -76,6 +74,7 @@ if(EMSCRIPTEN)
 
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
 else()
+    FetchContent_MakeAvailable(raylib)
 
     # PkgConfig dependencies
     find_package(PkgConfig REQUIRED)

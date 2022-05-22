@@ -1,8 +1,10 @@
 // STL includes
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 // Libraries
 #include "raylib-cpp.hpp"
@@ -11,6 +13,10 @@
 #include "audiotrip/dtos.h"
 #include "raylib_ext/scoped.h"
 #include "raylib_ext/text3d.h"
+#include "splines/spline3d.h"
+
+// raylib config
+#include "config.h"
 
 namespace rlgl {
 #include "rlgl.h"
@@ -46,6 +52,33 @@ namespace rlgl {
 // - XY=0, angle 90° places the barrier on the side, center tick is at 125cm
 // - => reference point is in the middle, 55cm below the bottom side
 // - Y position is subtracted, not added
+
+/**
+ * Nasty trick to load a brand new color material from materials.mtl since raylib is partially broken.
+ * Load a fake model and then steal the material from it.
+ * @return
+ */
+static void applyMaterialsMtl(raylib::Model &model) {
+  // Unload old model materials
+  for (int i = 0; i < model.materialCount; i++) {
+    auto &material = reinterpret_cast<raylib::Material &>(model.materials[i]);
+    material.Unload();
+  }
+  RL_FREE(model.materials);
+
+  // Load fake model
+  raylib::Model tempModel("resources/models/materials_fake_model.obj");
+
+  // Transfer materials
+  model.materialCount = tempModel.materialCount;
+  model.materials = tempModel.materials;
+
+  // Prevent materials from being unloaded
+  tempModel.materialCount = 0;
+  tempModel.materials = nullptr;
+
+  // Destructor will unload the temp model
+}
 
 /**
  * Draws the choreography floor around the camera. The floor is actually centered around the camera and it follows it.
@@ -137,8 +170,16 @@ public:
   }
 };
 
+struct hash_tuple {
+  size_t operator()(const std::tuple<int, int, int, int> &x) const {
+    return std::get<0>(x) ^ std::get<1>(x) ^ std::get<2>(x) ^ std::get<3>(x);
+  }
+};
+
 class Application {
 private:
+  using RibbonKey = std::tuple<int, int, int, int>; // beat, numerator, denominator, RHS (bool as int)
+
   std::unique_ptr<raylib::Window> window;
   std::unique_ptr<raylib::Camera> camera;
   std::unique_ptr<raylib::Shader> shader;
@@ -159,6 +200,7 @@ private:
   std::unique_ptr<audiotrip::AudioTripSong> ats;
   audiotrip::Choreography *choreo = nullptr;
   std::vector<audiotrip::Beat> beats;
+  std::unordered_map<RibbonKey, std::pair<raylib::Model, raylib::Vector3>, hash_tuple> ribbons;
 
   bool mouseCaptured = true;
 
@@ -247,8 +289,10 @@ private:
     choreo = &ats->choreographies.front(); // TODO: let the user pick
     beats = ats->computeBeats();
     camera->position.z = INITIAL_DISTANCE; // Go back to the start
-    mouseCapture(true);
+    //    mouseCapture(true);
     std::cout << "Opened ATS file: " << path << std::endl;
+
+    ribbons.clear();
   }
 
   static void emscriptenMainloop(void *obj) {
@@ -311,13 +355,27 @@ private:
     DrawText(text, posX, posY, 20, BLACK);
   }
 
+  float getBeatTime(float beatNum) {
+    auto intBeat = static_cast<size_t>(beatNum);
+    audiotrip::Beat beat = beats[intBeat];
+    float beatTime = beat.time;
+    float fraction = beatNum - static_cast<float>(intBeat);
+
+    if (fraction != 1 && fraction != 0) {
+      float secondsPerBeat = 60.0f / beat.bpm;
+      beatTime += secondsPerBeat * fraction;
+    }
+
+    return beatTime;
+  }
+
   void drawChoreo() {
     ClearBackground(GRAY);
 
     {
       raylib_ext::scoped::Mode3D mode3d(*camera);
 
-      skybox->Draw();
+      //      skybox->Draw();
 
       DrawChoreoFloor(*floorTexture, *camera);
 
@@ -351,15 +409,9 @@ private:
         }
       }
       for (const audiotrip::ChoreoEvent &event : choreo->events) {
-        audiotrip::Beat beat = beats[event.time.beat];
-        float beatTime = beat.time;
-        float fraction = static_cast<float>(event.time.numerator) / static_cast<float>(event.time.denominator);
-
-        if (fraction != 1 && fraction != 0) {
-          float secondsPerBeat = 60.0f / beat.bpm;
-          beatTime += secondsPerBeat * fraction;
-        }
-
+        float beatTime = getBeatTime(static_cast<float>(event.time.beat) +
+                                     static_cast<float>(event.time.numerator) /
+                                       static_cast<float>(event.time.denominator));
         float beatDistance = choreo->secondsToMeters(beatTime);
 
         if (beatDistance > maxDistance || beatDistance < minDistance)
@@ -420,9 +472,6 @@ private:
         DrawModel(*gemModel, { 0, 0, 0 }, 1, color);
         DrawModel(*gemTrailModel, { 0, 0, 0 }, 1, color);
         break;
-      case audiotrip::ChoreoEventTypeRibbonL:
-      case audiotrip::ChoreoEventTypeRibbonR:
-        break;
       case audiotrip::ChoreoEventTypeDrumL:
       case audiotrip::ChoreoEventTypeDrumR:
         // Somebody smarter than me please fix the angles, thanks!
@@ -439,15 +488,74 @@ private:
         rlgl::rlRotatef(event.isRHS() ? 30 : -30, 0, 0, 1);
         DrawModel(*dirgemModel, { 0, 0, 0 }, 1, color);
         break;
+      case audiotrip::ChoreoEventTypeRibbonL:
+      case audiotrip::ChoreoEventTypeRibbonR: {
+        // Ribbon
+        auto [snake, endPosition] = genOrGetRibbon(event, distance);
+        snake.Draw({ 0, 0, 0 }, 1, color);
+        {
+          // Initial gem
+          raylib_ext::scoped::Matrix m;
+          // Move 5cm back so it doesn't intersect the ribbon
+          rlgl::rlTranslatef(0, 0, -0.05);
+          rlgl::rlRotatef(event.isRHS() ? -30 : 30, 0, 0, 1);
+          rlgl::rlRotatef(180, 0, 1, 0);
+          DrawModel(*gemModel, { 0, 0, 0 }, 1, color);
+        }
+        {
+          // Final gem
+          raylib_ext::scoped::Matrix m;
+          rlgl::rlTranslatef(endPosition.x, endPosition.y, endPosition.z);
+          rlgl::rlRotatef(event.isRHS() ? -30 : 30, 0, 0, 1);
+          rlgl::rlRotatef(180, 0, 1, 0);
+          DrawModel(*gemModel, { 0, 0, 0 }, 1, color);
+        }
+
+        break;
+      }
       default:
         break;
       }
     }
   }
+
+  std::pair<raylib::Model &, Vector3> genOrGetRibbon(const audiotrip::ChoreoEvent &event, float distance) {
+    RibbonKey key = { event.time.beat, event.time.numerator, event.time.denominator, event.isRHS() };
+    auto it = ribbons.find(key);
+    if (it != ribbons.end())
+      return { it->second.first, it->second.second };
+
+    std::vector<raylib::Vector3> positions;
+    float beat = static_cast<float>(event.time.beat) +
+                 static_cast<float>(event.time.numerator) / static_cast<float>(event.time.denominator);
+    float beatIncrement = 1.0f / static_cast<float>(event.beatDivision);
+
+    for (const audiotrip::Position &p : event.subPositions) {
+      positions.emplace_back(p.vectorWithDistance(choreo->secondsToMeters(getBeatTime(beat)) - distance));
+      beat += beatIncrement;
+    }
+
+    using namespace splines;
+    std::vector<Spline3D> splines = Spline3D::FromPoints(positions);
+
+    raylib::Mesh mesh = createSnakeMesh(splines, 0.05, 20, 8);
+    ribbons.emplace(key, std::pair<raylib::Model, raylib::Vector3>{ raylib::Model{ mesh }, positions.back() });
+
+    // Prevent the mesh from being unloaded at the end of this scope. It is now owned by the Model.
+    mesh.vboId = nullptr;
+
+    raylib::Model &model = ribbons.at(key).first;
+    applyMaterialsMtl(model);
+    model.meshMaterial[0] = 1;
+
+    return { model, positions.back() };
+  }
 };
 
 int main(int argc, const char *argv[]) {
   std::optional<std::string> filename = std::nullopt;
+
+  chdir("/home/depau/CLionProjects/AudioTrip-LevelViewer");
 
   if (argc > 1) {
     if (std::string_view(argv[1]) == "-h" || std::string_view(argv[1]) == "--help") {
