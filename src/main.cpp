@@ -289,7 +289,7 @@ private:
     choreo = &ats->choreographies.front(); // TODO: let the user pick
     beats = ats->computeBeats();
     camera->position.z = INITIAL_DISTANCE; // Go back to the start
-    //    mouseCapture(true);
+    mouseCapture(true);
     std::cout << "Opened ATS file: " << path << std::endl;
 
     ribbons.clear();
@@ -375,7 +375,7 @@ private:
     {
       raylib_ext::scoped::Mode3D mode3d(*camera);
 
-      //      skybox->Draw();
+      skybox->Draw();
 
       DrawChoreoFloor(*floorTexture, *camera);
 
@@ -555,7 +555,7 @@ private:
 int main(int argc, const char *argv[]) {
   std::optional<std::string> filename = std::nullopt;
 
-  chdir("/home/depau/CLionProjects/AudioTrip-LevelViewer");
+  //  chdir("/home/depau/CLionProjects/AudioTrip-LevelViewer");
 
   if (argc > 1) {
     if (std::string_view(argv[1]) == "-h" || std::string_view(argv[1]) == "--help") {
