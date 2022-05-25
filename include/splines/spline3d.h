@@ -142,13 +142,7 @@ public:
     };
   }
 
-  V3f operator*(const V3f &v) const {
-    return {
-      row(0).DotProduct(v),
-      row(1).DotProduct(v),
-      row(2).DotProduct(v)
-    };
-  }
+  V3f operator*(const V3f &v) const { return { row(0).DotProduct(v), row(1).DotProduct(v), row(2).DotProduct(v) }; }
 
   template<typename T>
   void operator+=(const T &other) {
@@ -301,8 +295,9 @@ public:
   // Subdivision
 };
 
-raylib::Mesh createSnakeMesh(const std::vector<Spline3D> &splines,
-                             float radius,
-                             size_t radialPoints = 20,
-                             size_t splineDivisions = 8);
+std::vector<V3f> rotateShapeAroundZAxis(const std::vector<V3f> &shape, float angleInRadians);
+
+raylib::Mesh createRibbonMesh(const std::vector<V3f> &sliceShape,
+                              const std::vector<Spline3D> &splines,
+                              size_t splineDivisions);
 } // namespace splines

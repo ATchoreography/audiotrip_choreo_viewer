@@ -53,6 +53,32 @@ namespace rlgl {
 // - => reference point is in the middle, 55cm below the bottom side
 // - Y position is subtracted, not added
 
+// NOLINTNEXTLINE(cert-err58-cpp)
+static const std::vector<raylib::Vector3> RibbonShape{  { 0.06763590399999997f, -0.03723645799999998f, 0.0f },
+                                                       { 0.012288303999999983f, 0.05794114199999999f, 0.0f },
+                                                       { 0.0076265839999999745f, 0.061651142f, 0.0f },
+                                                       { 0.0022791439999999825f, 0.063199962f, 0.0f },
+                                                       { -0.004558176000000008f, 0.06266969800000001f, 0.0f },
+                                                       { -0.010277735999999999f, 0.06015566200000001f, 0.0f },
+                                                       { -0.014420896000000002f, 0.056452662f, 0.0f },
+                                                       { -0.017133956f, 0.05142190199999999f, 0.0f },
+                                                       { -0.066929156f, -0.036593297999999996f, 0.0f },
+                                                       { -0.069293896f, -0.04125585799999999f, 0.0f },
+                                                       { -0.070000364f, -0.04673069799999998f, 0.0f },
+                                                       { -0.068853176f, -0.051434137999999976f, 0.0f },
+                                                       { -0.06474865600000002f, -0.057691017999999976f, 0.0f },
+                                                       { -0.05898933600000002f, -0.06178741799999996f, 0.0f },
+                                                       { -0.05422261600000002f, -0.06319996199999997f, 0.0f },
+                                                       { -0.049258216000000014f, -0.06308628199999997f, 0.0f },
+                                                       { 0.05459378399999998f, -0.06290008199999995f, 0.0f },
+                                                       { 0.060133023999999986f, -0.061001205999999975f, 0.0f },
+                                                       { 0.064287944f, -0.057901605999999974f, 0.0f },
+                                                       { 0.06743514399999999f, -0.05396900599999998f, 0.0f },
+                                                       { 0.06962773999999998f, -0.048809446f, 0.0f },
+                                                       { 0.070000364f, -0.043388366000000005f, 0.0f },
+                                                       { 0.06763590399999997f, -0.03723645799999998f, 0.0f }
+};
+
 /**
  * Nasty trick to load a brand new color material from materials.mtl since raylib is partially broken.
  * Load a fake model and then steal the material from it.
@@ -492,7 +518,7 @@ private:
       case audiotrip::ChoreoEventTypeRibbonR: {
         // Ribbon
         auto [snake, endPosition] = genOrGetRibbon(event, distance);
-        snake.Draw({ 0, 0, 0 }, 1, color);
+        snake.Draw({ 0, 0.006, 0 }, 1, color);
         {
           // Initial gem
           raylib_ext::scoped::Matrix m;
@@ -510,7 +536,6 @@ private:
           rlgl::rlRotatef(180, 0, 1, 0);
           DrawModel(*gemModel, { 0, 0, 0 }, 1, color);
         }
-
         break;
       }
       default:
@@ -538,7 +563,8 @@ private:
     using namespace splines;
     std::vector<Spline3D> splines = Spline3D::FromPoints(positions);
 
-    raylib::Mesh mesh = createSnakeMesh(splines, 0.05, 20, 8);
+    std::vector<raylib::Vector3> sliceShape = rotateShapeAroundZAxis(RibbonShape, PI / 6.0 * (event.isRHS() ? -1 : 1));
+    raylib::Mesh mesh = createRibbonMesh(sliceShape, splines, 8);
     ribbons.emplace(key, std::pair<raylib::Model, raylib::Vector3>{ raylib::Model{ mesh }, positions.back() });
 
     // Prevent the mesh from being unloaded at the end of this scope. It is now owned by the Model.
