@@ -229,9 +229,10 @@ private:
   std::unordered_map<RibbonKey, std::pair<raylib::Model, raylib::Vector3>, hash_tuple> ribbons;
 
   bool mouseCaptured = true;
+  bool debug = false;
 
 public:
-  Application() {
+  Application(bool debug = false) : debug(debug) {
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     window = std::make_unique<raylib::Window>(800, 600, "Audio Trip Choreography Viewer");
     (void) window; // Silence unused variable
@@ -304,7 +305,7 @@ public:
 private:
   void mouseCapture(std::optional<bool> val) {
     mouseCaptured = val.has_value() ? *val : !mouseCaptured;
-    if (mouseCaptured)
+    if (!debug && mouseCaptured)
       DisableCursor();
     else
       EnableCursor();
@@ -592,7 +593,9 @@ int main(int argc, const char *argv[]) {
     }
   }
 
-  Application app;
+  bool debug = std::string_view(argv[argc - 1]) == "--debug";
+
+  Application app(debug);
   app.main(filename);
   return 0;
 }
