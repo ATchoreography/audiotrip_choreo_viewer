@@ -12,13 +12,11 @@ namespace splines {
 
 static std::vector<V3f> getRotatedShapeForNextPoint(const V3f &position,
                                                     const V3f &normal,
-                                                    const std::vector<V3f> &prevShape,
-                                                    V3f prevPosition,
-                                                    V3f prevNormal,
+                                                    const std::vector<V3f> &shape,
                                                     float epsilon = 1e-6) {
   // Obtain the rotation matrix that rotates prevNormal into normal
   // Rotation matrix calculation algorithm from https://math.stackexchange.com/a/476311
-  V3f a = prevNormal.Normalize();
+  V3f a = { 0, 0, 1 };
   V3f b = normal.Normalize();
 
   // static_cast to const is to silence ISO C++20 warning that considers == commutable
@@ -35,10 +33,10 @@ static std::vector<V3f> getRotatedShapeForNextPoint(const V3f &position,
                              Matrix3x3::skewSymmetricCrossProductMatrix(v).power(2) * (1.0f / (1.0f + c));
 
   std::vector<V3f> result;
-  result.reserve(prevShape.size());
+  result.reserve(shape.size());
 
-  for (const V3f &vector : prevShape)
-    result.push_back((rotationMatrix * (vector - prevPosition)).Add(position));
+  for (const V3f &vector : shape)
+    result.push_back((rotationMatrix * vector).Add(position));
 
   return result;
 }
@@ -86,7 +84,8 @@ raylib::Mesh createRibbonMesh(const std::vector<V3f> &sliceShape,
   const Spline3D &lastSpline = splines.back();
 
   // First and last slices always face the player
-  V3f lastTangent = { 0, 0, 1 };
+  V3f firstTangent = { 0, 0, 1 };
+  V3f lastTangent = firstTangent;
 
   // First point should always be the origin
   float epsilon = 1e-6;
@@ -107,18 +106,15 @@ raylib::Mesh createRibbonMesh(const std::vector<V3f> &sliceShape,
     for (size_t i = 1; i <= splineDivisions; i++) {
       sliceNum++;
       float t = 1.0f / static_cast<float>(splineDivisions) * static_cast<float>(i);
-      V3f tangent = isLast ? V3f(0, 0, 1)
-                           : spline.Velocity(t);
+      V3f tangent = isLast ? V3f(0, 0, 1) : spline.Velocity(t);
 
       // Avoid adding a slice if the last two tangents, normalized (=> 1m long) are less than 1cm apart
       if (!isLast && lastTangent.Normalize().Subtract(tangent.Normalize()).Length() < 0.00001)
         continue;
 
-      slices.push_back(
-        getRotatedShapeForNextPoint(spline.Position(t), tangent, slices.back(), slicePositions.back(), lastTangent));
+      slices.push_back(getRotatedShapeForNextPoint(spline.Position(t), tangent, sliceShape));
       slicePositions.push_back(spline.Position(t));
       sliceLengthWiseTCoords.push_back((static_cast<float>(sliceNum - 1) + t) / static_cast<float>(maxNumberOfSlices));
-      lastTangent = tangent;
     }
   }
 
