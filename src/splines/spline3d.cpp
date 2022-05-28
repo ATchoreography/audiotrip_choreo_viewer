@@ -71,18 +71,16 @@ static std::vector<V3f> translateShape(const std::vector<V3f> &shape, V3f offset
   return result;
 }
 
-raylib::Mesh
-createRibbonMesh(const std::vector<V3f> &sliceShape, const std::vector<Spline3D> &splines, size_t splineDivisions) {
-  size_t numberOfSlices = splines.size() * splineDivisions + 1;
-  size_t numberOfVertices = 2 + sliceShape.size() * (splineDivisions * splines.size() + 1);
-  size_t numberOfTriangles = 2 * (sliceShape.size() - 1) // ends
-                             + (numberOfSlices - 1) * 2 * (sliceShape.size() - 1);
+raylib::Mesh createRibbonMesh(const std::vector<V3f> &sliceShape,
+                              const std::vector<Spline3D> &splines,
+                              size_t splineDivisions,
+                              float textureScale) {
+
+  size_t maxNumberOfSlices = splines.size() * splineDivisions + 1;
 
   // TODO: reduce number of copies
 
   // Generate vertices and texture coordinates
-  std::vector<std::vector<V3f>> slices;
-  std::vector<V3f> slicePositions;
 
   const Spline3D &firstSpline = splines.front();
   const Spline3D &lastSpline = splines.back();
@@ -94,24 +92,42 @@ createRibbonMesh(const std::vector<V3f> &sliceShape, const std::vector<Spline3D>
   float epsilon = 1e-6;
   assert(splines.front().Position(0).Length() < epsilon);
 
+  std::vector<std::vector<V3f>> slices;
+  std::vector<V3f> slicePositions;
+  std::vector<float> sliceLengthWiseTCoords;
+
   slices.push_back(sliceShape);
   slicePositions.push_back(firstSpline.Position(0));
+  sliceLengthWiseTCoords.push_back(0);
 
+  unsigned int sliceNum = 0;
   for (const Spline3D &spline : splines) {
+    bool isLast = &spline == &lastSpline;
+
     for (size_t i = 1; i <= splineDivisions; i++) {
+      sliceNum++;
       float t = 1.0f / static_cast<float>(splineDivisions) * static_cast<float>(i);
-      V3f tangent = &spline == &lastSpline ? V3f(0, 0, 1) : spline.PoorMansTangent(t);
+      V3f tangent = isLast ? V3f(0, 0, 1)
+                           : spline.Velocity(t);
+
+      // Avoid adding a slice if the last two tangents, normalized (=> 1m long) are less than 1cm apart
+      if (!isLast && lastTangent.Normalize().Subtract(tangent.Normalize()).Length() < 0.00001)
+        continue;
 
       slices.push_back(
         getRotatedShapeForNextPoint(spline.Position(t), tangent, slices.back(), slicePositions.back(), lastTangent));
       slicePositions.push_back(spline.Position(t));
+      sliceLengthWiseTCoords.push_back((static_cast<float>(sliceNum - 1) + t) / static_cast<float>(maxNumberOfSlices));
       lastTangent = tangent;
     }
   }
 
   slices.back() = translateShape(sliceShape, slicePositions.back());
 
-  assert(slices.size() == numberOfSlices);
+  size_t numberOfSlices = slices.size();
+  size_t numberOfVertices = 2 + sliceShape.size() * numberOfSlices;
+  size_t numberOfTriangles = 2 * (sliceShape.size() - 1) // ends
+                             + (numberOfSlices - 1) * 2 * (sliceShape.size() - 1);
 
   float verticesArr[numberOfVertices * 3];
   float normalsArr[numberOfVertices * 3];
@@ -122,12 +138,12 @@ createRibbonMesh(const std::vector<V3f> &sliceShape, const std::vector<Spline3D>
   float *normals = normalsArr;
   float *tcoords = tcoordsArr;
 
-  float sliceNum = 0;
+  sliceNum = 0;
   for (const std::vector<V3f> &slice : slices) {
     float vertexNum = 0;
 
     for (const V3f &vertex : slice) {
-      V3f normal = (vertex - slicePositions.at(static_cast<int>(sliceNum))).Normalize();
+      V3f normal = (vertex - slicePositions.at(sliceNum)).Normalize();
 
       *points++ = vertex.x;
       *points++ = vertex.y;
@@ -137,7 +153,7 @@ createRibbonMesh(const std::vector<V3f> &sliceShape, const std::vector<Spline3D>
       *normals++ = normal.y;
       *normals++ = normal.z;
 
-      *tcoords++ = sliceNum / static_cast<float>(slices.size() - 1);
+      *tcoords++ = textureScale * sliceLengthWiseTCoords.at(sliceNum);
       *tcoords++ = vertexNum / static_cast<float>((sliceShape.size() - 1));
 
       vertexNum++;
@@ -151,26 +167,26 @@ createRibbonMesh(const std::vector<V3f> &sliceShape, const std::vector<Spline3D>
   *points++ = start.y;
   *points++ = start.z;
 
-  const V3f startNormal = splines.front().PoorMansTangent(0).Scale(-1).Normalize();
+  const V3f startNormal = splines.front().Velocity(0).Scale(-1).Normalize();
   *normals++ = startNormal.x;
   *normals++ = startNormal.y;
   *normals++ = startNormal.z;
 
   *tcoords++ = 0;
-  *tcoords++ = 0.5;
+  *tcoords++ = 0.5f;
 
   const V3f &end = splines.back().Position(1);
   *points++ = end.x;
   *points++ = end.y;
   *points++ = end.z;
 
-  const V3f endNormal = splines.back().PoorMansTangent(1).Normalize();
+  const V3f endNormal = splines.back().Velocity(1).Normalize();
   *normals++ = endNormal.x;
   *normals++ = endNormal.y;
   *normals++ = endNormal.z;
 
-  *tcoords++ = 1;
-  *tcoords++ = 0.5;
+  *tcoords++ = textureScale;
+  *tcoords++ = 0.5f;
 
   // Generate faces
   uint16_t *triangle = trianglesArr;
