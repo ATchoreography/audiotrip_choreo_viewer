@@ -140,6 +140,13 @@ public:
     raylib::Vector4 dt4(0, 1, 2 * t, 3 * t * t);
     return Evaluate(BezierWeights(dt4));
   }
+
+  [[nodiscard]] std::pair<Spline3D, Spline3D> Split(float t) const;
+  [[nodiscard]] std::pair<Spline3D, Spline3D> Split() const;
+
+  [[nodiscard]] float LengthEstimate(float &error) const;
+  [[nodiscard]] float Length(float maxError = 0.01f) const;
+  [[nodiscard]] float Length(float t0, float t1, float maxError = 0.01f) const;
 };
 
 std::vector<V3f> rotateShapeAroundZAxis(const std::vector<V3f> &shape, float angleInRadians);
