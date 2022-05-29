@@ -100,6 +100,10 @@ raylib::Mesh createRibbonMesh(const std::vector<V3f> &sliceShape,
   float epsilon = 1e-6;
   assert(splines.front().Position(0).Length() < epsilon);
 
+  float totalRibbonLength = 0;
+  for (const Spline3D &spline : splines)
+    totalRibbonLength += spline.Length();
+
   std::vector<std::vector<V3f>> slices;
   std::vector<V3f> slicePositions;
   std::vector<float> sliceLengthWiseTCoords;
@@ -109,6 +113,8 @@ raylib::Mesh createRibbonMesh(const std::vector<V3f> &sliceShape,
   sliceLengthWiseTCoords.push_back(0);
 
   unsigned int sliceNum = 0;
+  float ribbonLengthSoFar = 0;
+
   for (const Spline3D &spline : splines) {
     bool isLast = &spline == &lastSpline;
 
@@ -123,8 +129,12 @@ raylib::Mesh createRibbonMesh(const std::vector<V3f> &sliceShape,
 
       slices.push_back(getRotatedShapeForNextPoint(spline.Position(t), tangent, sliceShape));
       slicePositions.push_back(spline.Position(t));
-      sliceLengthWiseTCoords.push_back((static_cast<float>(sliceNum - 1) + t) / static_cast<float>(maxNumberOfSlices));
+
+      float ribbonLengthAtT = ribbonLengthSoFar + spline.Length(0.0f, t);
+      sliceLengthWiseTCoords.push_back(ribbonLengthAtT / totalRibbonLength);
     }
+
+    ribbonLengthSoFar += spline.Length();
   }
 
   slices.back() = translateShape(sliceShape, slicePositions.back());
