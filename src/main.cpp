@@ -83,7 +83,7 @@ static void applyMaterialsMtl(raylib::Model &model) {
   RL_FREE(model.materials);
 
   // Load fake model
-  raylib::Model tempModel("resources/models/materials_fake_model.obj");
+  raylib::Model tempModel("resources/models/ribbon_fake_model.obj");
 
   // Transfer materials
   model.materialCount = tempModel.materialCount;
@@ -558,7 +558,13 @@ private:
     std::vector<Spline3D> splines = Spline3D::FromPoints(positions);
 
     std::vector<raylib::Vector3> sliceShape = rotateShapeAroundZAxis(RibbonShape, PI / 6.0 * (event.isRHS() ? -1 : 1));
-    raylib::Mesh mesh = createRibbonMesh(sliceShape, splines, 8);
+    raylib::Mesh mesh = createRibbonMesh(sliceShape,
+                                         splines,
+                                         static_cast<size_t>(
+                                           std::max(2.0f, 64.0f / static_cast<float>(event.beatDivision))),
+                                         static_cast<float>(splines.size()) *
+                                           (static_cast<float>(choreo->gemSpeed) / 2.5f) /
+                                           static_cast<float>(event.beatDivision));
     ribbons.emplace(key, std::pair<raylib::Model, raylib::Vector3>{ raylib::Model{ mesh }, positions.back() });
 
     // Prevent the mesh from being unloaded at the end of this scope. It is now owned by the Model.
@@ -566,7 +572,13 @@ private:
 
     raylib::Model &model = ribbons.at(key).first;
     applyMaterialsMtl(model);
-    model.meshMaterial[0] = 1;
+    model.meshMaterial[0] = 0;
+
+    unsigned int textureId = model.materials[0].maps[0].texture.id;
+
+    rlgl::rlTextureParameters(textureId, RL_TEXTURE_MAG_FILTER, RL_TEXTURE_FILTER_ANISOTROPIC);
+    rlgl::rlTextureParameters(textureId, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlgl::rlTextureParameters(textureId, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
     return { model, positions.back() };
   }
@@ -579,7 +591,7 @@ int main(int argc, const char *argv[]) {
 
   if (argc > 1) {
     if (std::string_view(argv[1]) == "-h" || std::string_view(argv[1]) == "--help") {
-      std::cout << "Usage: " << argv[0] << " [ats file]" << std::endl;
+      std::cout << "Usage: " << argv[0] << " [ats file] [--debug]" << std::endl;
       return 0;
     } else {
       filename = argv[1];
