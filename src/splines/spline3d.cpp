@@ -123,8 +123,8 @@ raylib::Mesh createRibbonMesh(const std::vector<V3f> &sliceShape,
       float t = 1.0f / static_cast<float>(splineDivisions) * static_cast<float>(i);
       V3f tangent = isLast ? V3f(0, 0, 1) : spline.Velocity(t);
 
-      // Avoid adding a slice if the last two tangents, normalized (=> 1m long) are less than 1cm apart
-      if (!isLast && lastTangent.Normalize().Subtract(tangent.Normalize()).Length() < 0.00001)
+      // Avoid adding a slice if the last two tangents, normalized (=> 1m long) are less than 0.5cm apart
+      if (!isLast && lastTangent.Normalize().Subtract(tangent.Normalize()).Length() < 0.005)
         continue;
 
       slices.push_back(getRotatedShapeForNextPoint(spline.Position(t), tangent, sliceShape));

@@ -561,7 +561,7 @@ private:
     raylib::Mesh mesh = createRibbonMesh(sliceShape,
                                          splines,
                                          static_cast<size_t>(
-                                           std::max(2.0f, 64.0f / static_cast<float>(event.beatDivision))),
+                                           std::max(2.0f, 128.0f / static_cast<float>(event.beatDivision))),
                                          static_cast<float>(splines.size()) *
                                            (static_cast<float>(choreo->gemSpeed) / 2.5f) /
                                            static_cast<float>(event.beatDivision));
