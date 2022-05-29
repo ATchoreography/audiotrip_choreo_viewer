@@ -113,7 +113,7 @@ public:
 
   Choreography(const Json::Value &j);
 
-  [[nodiscard]] float secondsToMeters(float seconds) const { return seconds * gemSpeed; }
+  [[nodiscard]] float secondsToMeters(float seconds) const { return seconds * static_cast<float>(gemSpeed); }
 };
 
 class TempoSection {
