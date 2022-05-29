@@ -13,10 +13,6 @@ namespace rlgl {
 #include "rlgl.h"
 }
 
-#if defined(PLATFORM_WEB)
-#include <emscripten/emscripten.h>
-#endif
-
 // raylib config
 #include "config.h"
 

@@ -18,6 +18,10 @@
 #include "raylib_ext/text3d.h"
 #include "rendering/SkyBox.h"
 
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
 struct hash_tuple {
   size_t operator()(const std::tuple<int, int, int, int> &x) const {
     return std::get<0>(x) ^ std::get<1>(x) ^ std::get<2>(x) ^ std::get<3>(x);
