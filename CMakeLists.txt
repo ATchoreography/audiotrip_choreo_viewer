@@ -11,10 +11,15 @@ set(OpenGL_GL_PREFERENCE GLVND)
 add_executable(
     AudioTrip_LevelViewer
     src/main.cpp
+    src/Application.cpp
+    src/ApplicationRendering.cpp
     src/audiotrip/dtos.cpp
     src/audiotrip/utils.cpp
     src/raylib_ext/text3d.cpp
-    src/splines/spline3d.cpp)
+    src/rendering/SkyBox.cpp
+    src/rendering/ribbon_helpers.cpp
+    src/splines/spline3d.cpp
+)
 
 if(EMSCRIPTEN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 --preload-file ${CMAKE_SOURCE_DIR}/resources@resources/ --shell-file ${CMAKE_SOURCE_DIR}/emscripten.html")

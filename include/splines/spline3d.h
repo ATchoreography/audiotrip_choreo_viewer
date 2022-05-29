@@ -145,10 +145,4 @@ public:
   [[nodiscard]] float Length(float t0, float t1, float maxError = 0.01f) const;
 };
 
-std::vector<V3f> rotateShapeAroundZAxis(const std::vector<V3f> &shape, float angleInRadians);
-
-raylib::Mesh createRibbonMesh(const std::vector<V3f> &sliceShape,
-                              const std::vector<Spline3D> &splines,
-                              size_t splineDivisions,
-                              float textureScale = 1.0f);
 } // namespace splines
