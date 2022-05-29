@@ -69,6 +69,9 @@ AudioTripSong AudioTripSong::fromJson(std::istream &is) {
   Json::CharReaderBuilder builder;
   JSONCPP_STRING errs;
 
+  builder.settings_["allowSpecialFloats"] = true;
+  builder.settings_["allowTrailingCommas"] = true;
+
   Json::Value root;
   if (!Json::parseFromStream(builder, is, &root, &errs)) {
     // TODO: use exceptions maybe

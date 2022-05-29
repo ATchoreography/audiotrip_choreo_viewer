@@ -144,7 +144,7 @@ void Application::openAts(const std::string &path) {
   gui.atsTitle = ats->title;
   gui.atsArtist = ats->artist;
 
-  int bpm = static_cast<int>(ats->avgBPM);
+  int bpm = 0;
   for (const audiotrip::TempoSection &tempoSection : ats->tempoSections) {
     if (static_cast<int>(tempoSection.beatsPerMinute) > bpm)
       bpm = static_cast<int>(tempoSection.beatsPerMinute);
