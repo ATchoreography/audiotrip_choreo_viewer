@@ -3,10 +3,8 @@
 //
 
 // STL includes
-#include <algorithm>
 #include <iostream>
 #include <optional>
-#include <unordered_map>
 
 // Libraries
 #include "raylib-cpp.hpp"
@@ -76,6 +74,8 @@ Application::Application(bool debug) : debug(debug) {
   dirgemModel->materials[0].shader = *shader;
 
   skybox = std::make_unique<SkyBox>("resources/at-cubemap.png");
+
+  gui.init();
 }
 
 void Application::drawFrame() {
@@ -95,11 +95,11 @@ void Application::drawFrame() {
     mouseCapture(std::nullopt); // Toggle capture
   }
 
-  if (choreo != nullptr) {
+  if (ats != nullptr) {
     bool plusPressed = IsKeyPressed(KEY_PAGE_UP);
     bool minusPressed = IsKeyPressed(KEY_PAGE_DOWN);
     if (plusPressed || minusPressed) {
-      camera->position.z += choreo->secondsToMeters(beats.at(1).time) * (minusPressed ? -1.0f : 1.0f);
+      camera->position.z += choreo().secondsToMeters(beats.at(1).time) * (minusPressed ? -1.0f : 1.0f);
     }
   }
 
@@ -117,4 +117,41 @@ void Application::drawFrame() {
     else
       drawSplash();
   }
+}
+
+void Application::openAts(const std::string &path) {
+  // Load JSON
+  ats = std::make_unique<audiotrip::AudioTripSong>(std::move(audiotrip::AudioTripSong::fromFile(path)));
+
+  // Post process
+  beats = ats->computeBeats();
+  camera->position.z = INITIAL_DISTANCE; // Go back to the start
+  mouseCapture(true);
+  std::cout << "Opened ATS file: " << path << std::endl;
+
+  // Clear ribbons cache
+  ribbons.clear();
+
+  // Update GUI
+  std::vector<std::string> choreoNames;
+  choreoNames.reserve(ats->choreographies.size());
+  for (const audiotrip::Choreography &choreo : ats->choreographies)
+    choreoNames.push_back(fmt::format("{} - {}", ats->authorID.displayName, choreo.name));
+
+  gui.choreoSelectorActive = 0;
+  gui.setChoreoNames(choreoNames);
+
+  gui.atsTitle = ats->title;
+  gui.atsArtist = ats->artist;
+
+  int bpm = static_cast<int>(ats->avgBPM);
+  for (const audiotrip::TempoSection &tempoSection : ats->tempoSections) {
+    if (static_cast<int>(tempoSection.beatsPerMinute) > bpm)
+      bpm = static_cast<int>(tempoSection.beatsPerMinute);
+  }
+
+  gui.atsBpmDuration = fmt::format("{}bpm - {}:{:>02}",
+                                   static_cast<int>(bpm),
+                                   static_cast<int>(ats->songEndTimeInSeconds) / 60,
+                                   static_cast<int>(ats->songEndTimeInSeconds) % 60);
 }

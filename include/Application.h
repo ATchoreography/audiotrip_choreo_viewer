@@ -4,10 +4,15 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <memory>
+#include <optional>
+#include <string>
+#include <string_view>
 #include <unordered_map>
 
 // Local includes
+#include "GUIState.h"
 #include "audiotrip/dtos.h"
 #include "raylib_ext/scoped.h"
 #include "raylib_ext/text3d.h"
@@ -41,12 +46,15 @@ private:
   Vector3 beatNumbersSize = { -1, -1, -1 };
 
   std::unique_ptr<audiotrip::AudioTripSong> ats;
-  audiotrip::Choreography *choreo = nullptr;
   std::vector<audiotrip::Beat> beats;
   std::unordered_map<RibbonKey, std::pair<raylib::Model, raylib::Vector3>, hash_tuple> ribbons;
 
   bool mouseCaptured = true;
   bool debug = false;
+
+  GUIState gui;
+
+  audiotrip::Choreography &choreo() { return ats->choreographies.at(gui.choreoSelectorActive); }
 
 public:
   Application(bool debug = false);
@@ -81,16 +89,7 @@ private:
       EnableCursor();
   }
 
-  void openAts(const std::string &path) {
-    ats = std::make_unique<audiotrip::AudioTripSong>(std::move(audiotrip::AudioTripSong::fromFile(path)));
-    choreo = &ats->choreographies.front(); // TODO: let the user pick
-    beats = ats->computeBeats();
-    camera->position.z = INITIAL_DISTANCE; // Go back to the start
-    mouseCapture(true);
-    std::cout << "Opened ATS file: " << path << std::endl;
-
-    ribbons.clear();
-  }
+  void openAts(const std::string &path);
 
   static void emscriptenMainloop(void *obj) {
     static_cast<Application *>(obj)->drawFrame();

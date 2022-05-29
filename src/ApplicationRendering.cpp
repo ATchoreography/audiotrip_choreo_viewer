@@ -143,7 +143,7 @@ void Application::drawChoreo() {
     // Draw beat numbers
     for (int beatNum = 1; beatNum <= beats.size(); beatNum++) {
       float beatTime = beats[beatNum - 1].time;
-      float beatDistance = choreo->secondsToMeters(beatTime);
+      float beatDistance = choreo().secondsToMeters(beatTime);
 
       if (beatDistance > maxDistance || beatDistance < minDistance)
         continue;
@@ -166,10 +166,10 @@ void Application::drawChoreo() {
         }
       }
     }
-    for (const audiotrip::ChoreoEvent &event : choreo->events) {
+    for (const audiotrip::ChoreoEvent &event : choreo().events) {
       float beatTime = getBeatTime(static_cast<float>(event.time.beat) + static_cast<float>(event.time.numerator) /
                                                                            static_cast<float>(event.time.denominator));
-      float beatDistance = choreo->secondsToMeters(beatTime);
+      float beatDistance = choreo().secondsToMeters(beatTime);
 
       if (beatDistance > maxDistance || beatDistance < minDistance)
         continue;
@@ -178,30 +178,11 @@ void Application::drawChoreo() {
     }
   }
 
-  Vector2 textSize = MeasureTextEx(GetFontDefault(), "Test", 20, 1);
-  int margin = 10;
-  int padding = 10;
-  int lineSpacing = 5;
-  int textHeight = static_cast<int>(textSize.y);
-  int textWidth = std::max({ MeasureText(ats->title.c_str(), 20),
-                             MeasureText(ats->artist.c_str(), 20),
-                             MeasureText(ats->authorID.displayName.c_str(), 20) });
+  gui.Draw();
 
-  int boxHeight = textHeight * 3 + lineSpacing * 2 + padding * 2;
-  int boxWidth = textWidth + padding * 2;
-
-  DrawRectangle(margin, margin, boxWidth, boxHeight, Fade(WHITE, 0.5f));
-  DrawRectangleLines(margin, margin, boxWidth, boxHeight, BLUE);
-
-  DrawText(ats->title.c_str(), padding + margin, padding + margin, 20, BLACK);
-  DrawText(ats->artist.c_str(), padding + margin, padding + margin + textHeight + lineSpacing, 20, DARKGRAY);
-  DrawText(ats->authorID.displayName.c_str(),
-           padding + margin,
-           padding + margin + textHeight * 2 + lineSpacing * 2,
-           20,
-           DARKGRAY);
-
-  //    DrawFPS(padding, window->GetHeight() - MeasureTextEx(GetFontDefault(), "FPS", 20, 1).y - padding);
+  if (mouseCaptured) {
+    DrawText("M - Press M to release mouse", 8, window->GetHeight() - 20, 15, WHITE);
+  }
 }
 void Application::drawChoreoEventElement(const audiotrip::ChoreoEvent &event, float distance) {
   raylib_ext::scoped::Matrix matrix;
@@ -211,14 +192,14 @@ void Application::drawChoreoEventElement(const audiotrip::ChoreoEvent &event, fl
     rlgl::rlTranslatef(0, 1.20, v.z);
     rlgl::rlRotatef(-event.position.z(), 0, 0, 1);
     rlgl::rlTranslatef(0, 0.45f - v.y, 0);
-    DrawModel(*barrierModel, { 0, 0, 0 }, 1, RED);
+    DrawModel(*barrierModel, { 0, 0, 0 }, 1, gui.barrierColorPickerValue);
     return;
   }
 
   rlgl::rlTranslatef(v.x, v.y, v.z);
   {
     raylib_ext::scoped::Matrix rotation;
-    Color color = event.isRHS() ? ORANGE : PURPLE;
+    Color color = event.isRHS() ? gui.rhsColorPickerValue : gui.lhsColorPickerValue;
 
     switch (event.type) {
     case audiotrip::ChoreoEventTypeGemL:
@@ -289,7 +270,7 @@ std::pair<raylib::Model &, Vector3> Application::genOrGetRibbon(const audiotrip:
   float beatIncrement = 1.0f / static_cast<float>(event.beatDivision);
 
   for (const audiotrip::Position &p : event.subPositions) {
-    positions.emplace_back(p.vectorWithDistance(choreo->secondsToMeters(getBeatTime(beat)) - distance));
+    positions.emplace_back(p.vectorWithDistance(choreo().secondsToMeters(getBeatTime(beat)) - distance));
     beat += beatIncrement;
   }
 
@@ -303,7 +284,7 @@ std::pair<raylib::Model &, Vector3> Application::genOrGetRibbon(const audiotrip:
                                                 static_cast<size_t>(
                                                   std::max(2.0f, 128.0f / static_cast<float>(event.beatDivision))),
                                                 static_cast<float>(splines.size()) *
-                                                  (static_cast<float>(choreo->gemSpeed) / 2.5f) /
+                                                  (static_cast<float>(choreo().gemSpeed) / 2.5f) /
                                                   static_cast<float>(event.beatDivision));
   ribbons.emplace(key, std::pair<raylib::Model, raylib::Vector3>{ raylib::Model{ mesh }, positions.back() });
 

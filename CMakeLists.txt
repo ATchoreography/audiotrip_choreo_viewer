@@ -12,6 +12,7 @@ add_executable(
     AudioTrip_LevelViewer
     src/main.cpp
     src/Application.cpp
+    src/ApplicationGUI.cpp
     src/ApplicationRendering.cpp
     src/audiotrip/dtos.cpp
     src/audiotrip/utils.cpp
@@ -19,7 +20,7 @@ add_executable(
     src/rendering/SkyBox.cpp
     src/rendering/ribbon_helpers.cpp
     src/splines/spline3d.cpp
-)
+    src/raygui.cpp)
 
 if(EMSCRIPTEN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 --preload-file ${CMAKE_SOURCE_DIR}/resources@resources/ --shell-file ${CMAKE_SOURCE_DIR}/emscripten.html")
@@ -47,6 +48,12 @@ FetchContent_Declare(
     URL https://github.com/raysan5/raylib/archive/ef5be632fe777e8303cb2fba6be95e0e4aa0fc85.tar.gz
 )
 
+FetchContent_Declare(
+    raygui
+    URL https://github.com/raysan5/raygui/archive/refs/tags/3.1.tar.gz
+)
+
+
 if(EMSCRIPTEN)
     set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
@@ -63,23 +70,25 @@ if(EMSCRIPTEN)
         GIT_REPOSITORY https://github.com/fmtlib/fmt.git
         # GIT_TAG 8.1.1  # 8.1.1 does not build with emscripten
     )
-    FetchContent_MakeAvailable(raylib jsoncpp fmt)
+    FetchContent_MakeAvailable(raylib raygui jsoncpp fmt)
 
     target_include_directories(
-        AudioTrip_LevelViewer PUBLIC
+        ${PROJECT_NAME} PUBLIC
         ${jsoncpp_SOURCE_DIR}/include
+        ${raygui_SOURCE_DIR}/src
     )
 
     target_link_libraries(
-        AudioTrip_LevelViewer PUBLIC
+        ${PROJECT_NAME} PUBLIC
         fmt
         ${CMAKE_BINARY_DIR}/lib/libjsoncpp.a  # yeeeep
         raylib
+        raygui
     )
 
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
 else()
-    FetchContent_MakeAvailable(raylib)
+    FetchContent_MakeAvailable(raylib raygui)
 
     # PkgConfig dependencies
     find_package(PkgConfig REQUIRED)
@@ -87,8 +96,13 @@ else()
     pkg_search_module(JSONCPP REQUIRED IMPORTED_TARGET jsoncpp>=1.9.0)
     pkg_search_module(RAYLIB REQUIRED IMPORTED_TARGET raylib>=4.0.0)
 
+    target_include_directories(
+        ${PROJECT_NAME} PUBLIC
+        ${raygui_SOURCE_DIR}/src
+    )
+
     target_link_libraries(
-        AudioTrip_LevelViewer PUBLIC
+        ${PROJECT_NAME} PUBLIC
         PkgConfig::FMT
         PkgConfig::JSONCPP
         raylib

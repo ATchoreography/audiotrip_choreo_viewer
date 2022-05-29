@@ -1,0 +1,38 @@
+#
+# rgl layout text file (v2.5) - raygui layout file generated using rGuiLayout
+#
+# Number of controls:     20
+#
+# Ref. window:    r <x> <y> <width> <height>
+# Anchor info:    a <id> <name> <posx> <posy> <enabled>
+# Control info:   c <id> <type> <name> <rectangle> <anchor_id> <text>
+#
+r 0 0 -1 -1
+a 000 anchorMain 0 0 0
+a 001 atsInfoLocation 8 8 1
+a 002 settingsLocation 8 104 1
+a 003 anchor03 0 0 0
+a 004 anchor04 0 0 0
+a 005 anchor05 0 0 0
+a 006 anchor06 0 0 0
+a 007 anchor07 0 0 0
+c 000 3 atsInfoPanel 0 0 296 88 1 
+c 001 4 songTitleLabel 8 8 280 24 1 Song title
+c 002 4 songArtistLabel 8 32 184 16 1 Song Artist
+c 003 4 songBpmLabel 200 32 88 16 1 120bpm - 420:69
+c 004 11 choreoSelector 64 56 120 24 1 Expert;Regular;Beginner
+c 005 0 settingsWindowBox 0 0 296 280 2 Settings
+c 006 1 leftHandColorGroupBox 8 32 136 112 2 Left hand color
+c 007 22 lhsColorPicker 16 40 96 96 2 
+c 008 1 rightHandColorGroupBox 152 32 136 112 2 Right hand color
+c 009 22 rhsColorPicker 160 40 96 96 2 
+c 010 1 barrierColorGroupBox 8 152 136 112 2 Barrier color
+c 011 22 barrierColorPicker 16 160 96 96 2 
+c 012 8 settingsToggle 192 56 96 24 1 Settings + Help
+c 013 1 GroupBox014 152 152 136 112 2 Controls help
+c 014 4 Label015 160 168 120 10 2 WASD - Move around
+c 015 4 Label016 160 184 120 10 2 Page up/down: prev/
+c 016 4 next beat 160 192 120 10 2 next beat
+c 017 4 Label018 160 208 120 10 2 M: Toggle mouse capt.
+c 018 4 Label019 160 224 120 10 2 Esc: Quit
+c 019 5 openButton 8 56 48 24 1 Open...
