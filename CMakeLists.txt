@@ -23,7 +23,7 @@ add_executable(
     src/raygui.cpp)
 
 if(EMSCRIPTEN)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 --preload-file ${CMAKE_SOURCE_DIR}/resources@resources/ --shell-file ${CMAKE_SOURCE_DIR}/emscripten.html")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s TOTAL_MEMORY=125829120 -s ALLOW_MEMORY_GROWTH=1 -s FORCE_FILESYSTEM=1 -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 --preload-file ${CMAKE_SOURCE_DIR}/resources@resources/ --shell-file ${CMAKE_SOURCE_DIR}/emscripten.html")
     set(PLATFORM Web CACHE BOOL "" FORCE) # for raylib
     target_compile_options(${PROJECT_NAME} PUBLIC -DPLATFORM_WEB)
 else()
