@@ -84,7 +84,6 @@ if(EMSCRIPTEN)
         fmt
         ${CMAKE_BINARY_DIR}/lib/libjsoncpp.a  # yeeeep
         raylib
-        raygui
     )
 
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
