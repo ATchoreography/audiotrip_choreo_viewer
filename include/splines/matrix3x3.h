@@ -92,22 +92,6 @@ public:
              this->m12 * val, this->m20 * val, this->m21 * val, this->m22 * val };
   }
 
-  //  Matrix3x3 operator*(const Matrix3x3 &other) const {
-  //    return {
-  //      this->m00 * other.m00 + this->m01 * other.m10 + this->m02 * other.m20,
-  //      this->m00 * other.m01 + this->m01 * other.m11 + this->m02 * other.m21,
-  //      this->m00 * other.m02 + this->m01 * other.m12 + this->m02 * other.m22,
-  //
-  //      this->m10 * other.m00 + this->m11 * other.m10 + this->m12 * other.m20,
-  //      this->m10 * other.m01 + this->m11 * other.m11 + this->m12 * other.m21,
-  //      this->m10 * other.m02 + this->m11 * other.m12 + this->m12 * other.m22,
-  //
-  //      this->m20 * other.m00 + this->m21 * other.m10 + this->m22 * other.m20,
-  //      this->m20 * other.m01 + this->m21 * other.m11 + this->m22 * other.m21,
-  //      this->m20 * other.m02 + this->m21 * other.m12 + this->m22 * other.m22,
-  //    };
-  //  }
-
   Matrix3x3 operator*(const Matrix3x3 &other) const {
     return {
       row(0).DotProduct(col(0)), row(0).DotProduct(col(1)), row(0).DotProduct(col(2)),

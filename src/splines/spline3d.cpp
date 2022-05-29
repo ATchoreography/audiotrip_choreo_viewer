@@ -1,6 +1,7 @@
-//
-// Created by depau on 5/17/22.
-//
+/**
+ * Adaptation and port to raylib vectors of some parts of splines-lib
+ * https://github.com/andrewwillmott/splines-lib
+ */
 
 #include <cassert>
 #include <optional>

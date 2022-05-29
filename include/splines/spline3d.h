@@ -5,10 +5,6 @@
 /**
  * Adaptation and port to raylib vectors of some parts of splines-lib
  * https://github.com/andrewwillmott/splines-lib
- *
- * I mostly have no understanding of the math that is involved. The idea is if splines-lib is able to calculate the
- * spline through a number of points, let me subdivide it in equidistant locations and tell me the tangent vector I can
- * then compute circles around each vector and use these point to create the faces of the spline.
  */
 
 #pragma once
